@@ -35,6 +35,11 @@
     "grunt-retire": "^0.3.10",
     "grunt-shell": "^1.1.2",
     "load-grunt-tasks": "^3.3.0",
-    "mocha": "^2.3.3"
+    "mocha": "^2.3.3",
+    "swagger-tools": "^0.9.9"
+  },
+  "dependencies": {
+    "hapi": "^11.1.0",
+    "hapi-swaggered": "^2.4.1"
   }
 }
