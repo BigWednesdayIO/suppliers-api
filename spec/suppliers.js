@@ -70,8 +70,15 @@ describe('/suppliers', () => {
         });
     });
 
-    it('returns http 200', () => {
+    it('returns http 200 for a known supplier', () => {
       expect(getResponse.statusCode).to.equal(200);
+    });
+
+    it('returns http 404 for a supplier that doesn\'t exist', () => {
+      return specRequest({url: '/suppliers/abc', method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+        });
     });
 
     it('returns the supplier resource', () => {
