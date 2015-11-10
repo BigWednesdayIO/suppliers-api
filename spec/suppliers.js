@@ -38,6 +38,17 @@ describe('/suppliers', () => {
             expect(response.result.message).to.equal('child "name" fails because ["name" is required]');
           });
       });
+
+      it('requires name to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'name');
+        payload.name = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
+          });
+      });
     });
   });
 });
