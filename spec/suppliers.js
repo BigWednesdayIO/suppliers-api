@@ -60,6 +60,8 @@ describe('/suppliers', () => {
     before(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
+          expect(response.statusCode).to.equal(201);
+
           createResponse = response;
           return specRequest({url: response.headers.location, method: 'GET'});
         })
