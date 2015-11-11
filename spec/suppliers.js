@@ -4,7 +4,9 @@ const _ = require('lodash');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
-describe('/suppliers', () => {
+describe('/suppliers', function () {
+  this.timeout(2500);
+
   const createSupplierPayload = {name: 'A Supplier'};
 
   describe('post', () => {
