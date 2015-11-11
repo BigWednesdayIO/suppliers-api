@@ -55,4 +55,29 @@ describe('/suppliers', () => {
       });
     });
   });
+
+  describe('get', () => {
+    const suppliers = [
+      {id: 'A', name: 'Supplier A'},
+      {id: 'B', name: 'Supplier B'},
+      {id: 'C', name: 'Supplier C'}
+    ];
+
+    before(() => {
+      return require('./hooks').deleteTestData()
+        .then(() => Promise.all([
+          specRequest({url: '/suppliers/A', method: 'PUT', payload: suppliers[0]}),
+          specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]}),
+          specRequest({url: '/suppliers/C', method: 'PUT', payload: suppliers[2]})
+        ]));
+    });
+
+    it('returns all suppliers', () => {
+      return specRequest({url: '/suppliers', method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(200);
+          expect(response.result).to.deep.equal(suppliers);
+        });
+    });
+  });
 });

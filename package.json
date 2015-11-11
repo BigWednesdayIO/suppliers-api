@@ -36,7 +36,6 @@
     "grunt-retire": "^0.3.10",
     "grunt-shell": "^1.1.2",
     "load-grunt-tasks": "^3.3.0",
-    "lodash": "^3.10.1",
     "mocha": "^2.3.3",
     "nock": "^2.17.0",
     "sinon": "^1.17.2",
@@ -48,6 +47,7 @@
     "gcloud": "^0.24.1",
     "hapi": "^11.1.0",
     "hapi-swaggered": "^2.4.1",
-    "joi": "^7.0.0"
+    "joi": "^7.0.0",
+    "lodash": "^3.10.1"
   }
 }

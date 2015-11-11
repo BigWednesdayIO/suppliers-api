@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const expect = require('chai').expect;
 const sinon = require('sinon');
 const dataset = require('../../lib/models/dataset');
@@ -9,7 +10,12 @@ describe('Supplier', () => {
   let sandbox;
   let saveStub;
   let keyStub;
-  const persistedSupplier = {id: 'abc', name: 'supplier'};
+  const persistedSuppliers = [
+    {id: 'A', name: 'Supplier A'},
+    {id: 'B', name: 'Supplier B'},
+    {id: 'C', name: 'Supplier C'}
+  ];
+
   const newKey = {key: 'new'};
   const existingKey = {key: 'existing'};
 
@@ -31,11 +37,19 @@ describe('Supplier', () => {
     });
 
     sandbox.stub(dataset, 'runQuery', (query, callback) => {
-      if (query.filteredId === 'abc') {
-        return callback(null, [{key: existingKey, data: persistedSupplier}]);
+      if (query.filteredId) {
+        const supplier = _.find(persistedSuppliers, {id: query.filteredId});
+
+        if (supplier) {
+          return callback(null, [{key: existingKey, data: supplier}]);
+        }
+
+        return callback(null, []);
       }
 
-      callback(null, []);
+      callback(null, persistedSuppliers.map(s => {
+        return {key: existingKey, data: s};
+      }));
     });
 
     keyStub = sandbox.stub(dataset, 'key', () => {
@@ -77,9 +91,9 @@ describe('Supplier', () => {
 
   describe('get', () => {
     it('retrieves the supplier by id', () => {
-      return Supplier.get('abc')
+      return Supplier.get('A')
         .then(supplier => {
-          expect(supplier).to.equal(persistedSupplier);
+          expect(supplier).to.equal(persistedSuppliers[0]);
         });
     });
 
@@ -119,7 +133,7 @@ describe('Supplier', () => {
 
     describe('as update', () => {
       let updatedSupplier;
-      const existingSupplier = {id: 'abc', name: 'updated name'};
+      const existingSupplier = {id: 'A', name: 'updated name'};
 
       before(() => {
         return Supplier.upsert(existingSupplier)
@@ -138,6 +152,14 @@ describe('Supplier', () => {
 
       it('makes _inserted property non-enumerable', () => {
         expect(updatedSupplier._inserted.propertyIsEnumerable()).to.equal(false);
+      });
+    });
+  });
+
+  describe('find', () => {
+    it('returns all suppliers', () => {
+      return Supplier.find().then(results => {
+        expect(results).to.deep.equal(persistedSuppliers);
       });
     });
   });
