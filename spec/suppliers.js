@@ -56,6 +56,17 @@ describe('/suppliers', () => {
             expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
           });
       });
+
+      it('does not allow created_at', () => {
+        const payload = _.clone(createSupplierPayload);
+        payload.created_at = new Date();
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('"created_at" is not allowed');
+          });
+      });
     });
   });
 
