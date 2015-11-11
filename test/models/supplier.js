@@ -13,9 +13,9 @@ describe('Supplier', () => {
   const testDate = new Date();
 
   const persistedSuppliers = [
-    {id: 'A', name: 'Supplier A', created_at: testDate},
-    {id: 'B', name: 'Supplier B', created_at: testDate},
-    {id: 'C', name: 'Supplier C', created_at: testDate}
+    {id: 'A', name: 'Supplier A', created_at: new Date().setTime(testDate.getTime() + 2000)},
+    {id: 'B', name: 'Supplier B', created_at: new Date().setTime(testDate.getTime())},
+    {id: 'C', name: 'Supplier C', created_at: new Date().setTime(testDate.getTime() + 1000)}
   ];
 
   const newKey = {key: 'new'};
@@ -33,8 +33,13 @@ describe('Supplier', () => {
 
       return {
         filteredId: undefined,
-        filter: (_, id) => {
+        sortOrder: undefined,
+        filter(_, id) {
           this.filteredId = id;
+          return this;
+        },
+        order(order) {
+          this.sortOrder = order;
           return this;
         }
       };
@@ -51,8 +56,14 @@ describe('Supplier', () => {
         return callback(null, []);
       }
 
-      callback(null, persistedSuppliers.map(s => {
-        return {key: existingKey, data: s};
+      let data = persistedSuppliers;
+
+      if (query.sortOrder === 'created_at') {
+        data = _.sortBy(persistedSuppliers, 'created_at');
+      }
+
+      callback(null, data.map(supplier => {
+        return {key: existingKey, data: supplier};
       }));
     });
 
@@ -170,10 +181,23 @@ describe('Supplier', () => {
   });
 
   describe('find', () => {
-    it('returns all suppliers', () => {
-      return Supplier.find().then(results => {
-        expect(results).to.deep.equal(persistedSuppliers);
+    let foundSuppliers;
+
+    before(() => {
+      return Supplier.find().then(suppliers => {
+        foundSuppliers = suppliers;
       });
+    });
+
+    it('returns all suppliers', () => {
+      persistedSuppliers.forEach(supplier => {
+        const expectedSupplier = _.find(foundSuppliers, {id: supplier.id});
+        expect(expectedSupplier).to.exist;
+      });
+    });
+
+    it('returns suppliers sorted by default field created_at', () => {
+      expect(_.map(foundSuppliers, 'id')).to.deep.equal(['B', 'C', 'A']);
     });
   });
 });
