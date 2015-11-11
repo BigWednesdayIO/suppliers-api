@@ -1,8 +1,8 @@
 'use strict';
 
-const gcloud = require('gcloud');
 const expect = require('chai').expect;
 const sinon = require('sinon');
+const dataset = require('../../lib/models/dataset');
 
 describe('Supplier', () => {
   let Supplier;
@@ -16,33 +16,26 @@ describe('Supplier', () => {
   before(() => {
     sandbox = sinon.sandbox.create();
 
-    const dataset = {
-      key: () => {},
-      createQuery: kind => {
-        if (kind !== 'Supplier') {
-          return undefined;
+    sandbox.stub(dataset, 'createQuery', kind => {
+      if (kind !== 'Supplier') {
+        return undefined;
+      }
+
+      return {
+        filteredId: undefined,
+        filter: (_, id) => {
+          this.filteredId = id;
+          return this;
         }
+      };
+    });
 
-        return {
-          filteredId: undefined,
-          filter: (_, id) => {
-            this.filteredId = id;
-            return this;
-          }
-        };
-      },
-      runQuery: (query, callback) => {
-        if (query.filteredId === 'abc') {
-          return callback(null, [{key: existingKey, data: persistedSupplier}]);
-        }
+    sandbox.stub(dataset, 'runQuery', (query, callback) => {
+      if (query.filteredId === 'abc') {
+        return callback(null, [{key: existingKey, data: persistedSupplier}]);
+      }
 
-        callback(null, []);
-      },
-      save: () => {}
-    };
-
-    sandbox.stub(gcloud.datastore, 'dataset', () => {
-      return dataset;
+      callback(null, []);
     });
 
     keyStub = sandbox.stub(dataset, 'key', () => {

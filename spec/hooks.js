@@ -1,14 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-
-const projectId = process.env.GCLOUD_PROJECT_ID;
-const credentials = process.env.GCLOUD_KEY;
-
-const dataset = require('gcloud').datastore.dataset({
-  projectId,
-  credentials: JSON.parse(new Buffer(credentials, 'base64').toString('ascii'))
-});
+const dataset = require('../lib/models/dataset');
 
 after(done => {
   const query = dataset.createQuery('Supplier');
