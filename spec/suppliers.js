@@ -29,7 +29,10 @@ describe('/suppliers', () => {
       const resource = _.clone(createSupplierPayload);
       resource.id = createResponse.result.id;
 
-      expect(createResponse.result).to.deep.equal(resource);
+      expect(createResponse.result).to.have.property('created_at');
+
+      const result = _.omit(createResponse.result, 'created_at');
+      expect(result).to.deep.equal(resource);
     });
 
     describe('validation', () => {
@@ -65,18 +68,20 @@ describe('/suppliers', () => {
 
     before(() => {
       return require('./hooks').deleteTestData()
-        .then(() => Promise.all([
-          specRequest({url: '/suppliers/A', method: 'PUT', payload: suppliers[0]}),
-          specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]}),
-          specRequest({url: '/suppliers/C', method: 'PUT', payload: suppliers[2]})
-        ]));
+        .then(() => specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]}))
+        .then(() => specRequest({url: '/suppliers/A', method: 'PUT', payload: suppliers[0]}))
+        .then(() => specRequest({url: '/suppliers/C', method: 'PUT', payload: suppliers[2]}));
     });
 
     it('returns all suppliers', () => {
       return specRequest({url: '/suppliers', method: 'GET'})
         .then(response => {
           expect(response.statusCode).to.equal(200);
-          expect(response.result).to.deep.equal(suppliers);
+
+          response.result.forEach(s => expect(s).to.have.property('created_at'));
+
+          const result = response.result.map(s => _.omit(s, 'created_at'));
+          expect(result).to.deep.equal([suppliers[1], suppliers[0], suppliers[2]]);
         });
     });
   });

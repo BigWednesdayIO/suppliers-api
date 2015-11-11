@@ -39,7 +39,10 @@ describe('/suppliers/{id}', () => {
       const resource = _.clone(createSupplierPayload);
       resource.id = createResponse.result.id;
 
-      expect(getResponse.result).to.deep.equal(resource);
+      expect(getResponse.result).to.have.property('created_at');
+
+      const result = _.omit(getResponse.result, 'created_at');
+      expect(result).to.deep.equal(resource);
     });
   });
 
@@ -67,7 +70,10 @@ describe('/suppliers/{id}', () => {
         const resource = _.clone(createSupplierPayload);
         resource.id = createResponse.result.id;
 
-        expect(createResponse.result).to.deep.equal(resource);
+        expect(createResponse.result).to.have.property('created_at');
+
+        const result = _.omit(createResponse.result, 'created_at');
+        expect(result).to.deep.equal(resource);
       });
     });
 
@@ -90,7 +96,10 @@ describe('/suppliers/{id}', () => {
         const resource = _.clone(updatedSupplierPayload);
         resource.id = updateResponse.result.id;
 
-        expect(updateResponse.result).to.deep.equal(resource);
+        expect(updateResponse.result).to.have.property('created_at');
+
+        const result = _.omit(updateResponse.result, 'created_at');
+        expect(result).to.deep.equal(resource);
       });
     });
 
