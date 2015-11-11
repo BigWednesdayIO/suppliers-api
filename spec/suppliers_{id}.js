@@ -4,7 +4,7 @@ const _ = require('lodash');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
-describe('/suppliers/{id}', function () {
+describe('/suppliers/{id}', () => {
   const createSupplierPayload = {name: 'A Supplier'};
 
   describe('get', () => {
@@ -91,6 +91,52 @@ describe('/suppliers/{id}', function () {
         resource.id = updateResponse.result.id;
 
         expect(updateResponse.result).to.deep.equal(resource);
+      });
+    });
+
+    describe('validation', () => {
+      const putSupplierPayload = {id: 'SUP', name: 'supplier'};
+
+      it('requires id', () => {
+        const payload = _.omit(putSupplierPayload, 'id');
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "id" fails because ["id" is required]');
+          });
+      });
+
+      it('requires id to be a string', () => {
+        const payload = _.omit(putSupplierPayload, 'id');
+        payload.id = 1;
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "id" fails because ["id" must be a string]');
+          });
+      });
+
+      it('requires name', () => {
+        const payload = _.omit(putSupplierPayload, 'name');
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "name" fails because ["name" is required]');
+          });
+      });
+
+      it('requires name to be a string', () => {
+        const payload = _.omit(putSupplierPayload, 'name');
+        payload.name = 123;
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
+          });
       });
     });
   });
