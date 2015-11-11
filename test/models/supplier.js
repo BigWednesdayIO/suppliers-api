@@ -99,23 +99,53 @@ describe('Supplier', () => {
   });
 
   describe('upsert', () => {
-    it('inserts the supplier when it does not exist', () => {
+    describe('as create', () => {
+      let createdSupplier;
       const newSupplier = {id: 'new', name: 'new supplier'};
 
-      return Supplier.upsert(newSupplier)
-        .then(() => {
-          sinon.assert.calledWith(keyStub, 'Supplier');
-          sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: newSupplier}));
-        });
+      before(() => {
+        return Supplier.upsert(newSupplier)
+          .then(supplier => {
+            createdSupplier = supplier;
+          });
+      });
+
+      it('persists the supplier', () => {
+        sinon.assert.calledWith(keyStub, 'Supplier');
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: newSupplier}));
+      });
+
+      it('sets _inserted property', () => {
+        expect(createdSupplier._inserted).to.equal(true);
+      });
+
+      it('makes _inserted property non-enumerable', () => {
+        expect(createdSupplier._inserted.propertyIsEnumerable()).to.equal(false);
+      });
     });
 
-    it('updates an existing supplier', () => {
+    describe('as update', () => {
+      let updatedSupplier;
       const existingSupplier = {id: 'abc', name: 'updated name'};
 
-      return Supplier.upsert(existingSupplier)
-        .then(() => {
-          sinon.assert.calledWithMatch(saveStub, sinon.match({key: existingKey, method: 'update', data: existingSupplier}));
-        });
+      before(() => {
+        return Supplier.upsert(existingSupplier)
+          .then(supplier => {
+            updatedSupplier = supplier;
+          });
+      });
+
+      it('updates an existing supplier', () => {
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: existingKey, method: 'update', data: existingSupplier}));
+      });
+
+      it('sets _inserted property', () => {
+        expect(updatedSupplier._inserted).to.equal(false);
+      });
+
+      it('makes _inserted property non-enumerable', () => {
+        expect(updatedSupplier._inserted.propertyIsEnumerable()).to.equal(false);
+      });
     });
   });
 });
