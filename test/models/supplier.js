@@ -10,10 +10,12 @@ describe('Supplier', () => {
   let sandbox;
   let saveStub;
   let keyStub;
+  const testDate = new Date();
+
   const persistedSuppliers = [
-    {id: 'A', name: 'Supplier A'},
-    {id: 'B', name: 'Supplier B'},
-    {id: 'C', name: 'Supplier C'}
+    {id: 'A', name: 'Supplier A', created_at: testDate},
+    {id: 'B', name: 'Supplier B', created_at: testDate},
+    {id: 'C', name: 'Supplier C', created_at: testDate}
   ];
 
   const newKey = {key: 'new'};
@@ -21,6 +23,8 @@ describe('Supplier', () => {
 
   before(() => {
     sandbox = sinon.sandbox.create();
+
+    sandbox.useFakeTimers(testDate.getTime());
 
     sandbox.stub(dataset, 'createQuery', kind => {
       if (kind !== 'Supplier') {
@@ -68,24 +72,26 @@ describe('Supplier', () => {
   });
 
   describe('create', () => {
-    it('generates an id', () => {
-      return Supplier.create({name: 'a supplier'})
+    const newSupplier = {name: 'a supplier'};
+    let createdSupplier;
+
+    before(() => {
+      return Supplier.create(newSupplier)
         .then(supplier => {
-          expect(supplier).to.have.property('id');
+          createdSupplier = supplier;
         });
     });
 
+    it('generates an id', () => {
+      expect(createdSupplier).to.have.property('id');
+    });
+
+    it('sets created date', () => {
+      expect(createdSupplier.created_at).to.deep.equal(testDate);
+    });
+
     it('persists the supplier', () => {
-      const data = {name: 'a supplier'};
-      return Supplier.create(data)
-        .then(supplier => {
-          sinon.assert.calledWith(keyStub, 'Supplier');
-
-          const persistedData = data;
-          persistedData.id = supplier.id;
-
-          sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: persistedData}));
-        });
+      sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: createdSupplier}));
     });
   });
 
@@ -117,9 +123,13 @@ describe('Supplier', () => {
           });
       });
 
+      it('sets created date', () => {
+        expect(createdSupplier.created_at).to.deep.equal(testDate);
+      });
+
       it('persists the supplier', () => {
         sinon.assert.calledWith(keyStub, 'Supplier');
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: newSupplier}));
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: createdSupplier}));
       });
 
       it('sets _inserted property', () => {
@@ -133,17 +143,20 @@ describe('Supplier', () => {
 
     describe('as update', () => {
       let updatedSupplier;
-      const existingSupplier = {id: 'A', name: 'updated name'};
+      const upsertSupplier = {id: 'A', name: 'updated name'};
 
       before(() => {
-        return Supplier.upsert(existingSupplier)
+        return Supplier.upsert(upsertSupplier)
           .then(supplier => {
             updatedSupplier = supplier;
           });
       });
 
       it('updates an existing supplier', () => {
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: existingKey, method: 'update', data: existingSupplier}));
+        const persistedData = upsertSupplier;
+        persistedData.created_at = persistedSuppliers[0].created_at;
+
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: existingKey, method: 'update', data: persistedData}));
       });
 
       it('sets _inserted property', () => {

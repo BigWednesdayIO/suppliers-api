@@ -2,7 +2,8 @@
   "extends": "xo-space/esnext",
   "rules": {
     "strict": [2, "global"],
-    "prefer-reflect": 0
+    "prefer-reflect": 0,
+    "camelcase": 1
   },
   "ecmaFeatures": {
     "arrowFunctions": true,
