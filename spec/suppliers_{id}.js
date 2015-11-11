@@ -118,6 +118,17 @@ describe('/suppliers/{id}', () => {
           });
       });
 
+      it('requires id in path to match id in payload', () => {
+        const payload = _.omit(putSupplierPayload, 'id');
+        payload.id = 'NOTSUP';
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "id" fails because ["id" must be SUP]');
+          });
+      });
+
       it('requires name', () => {
         const payload = _.omit(putSupplierPayload, 'name');
 
