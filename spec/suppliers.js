@@ -72,9 +72,9 @@ describe('/suppliers', () => {
 
   describe('get', () => {
     const suppliers = [
-      {id: 'A', name: 'Supplier A'},
-      {id: 'B', name: 'Supplier B'},
-      {id: 'C', name: 'Supplier C'}
+      {name: 'Supplier A'},
+      {name: 'Supplier B'},
+      {name: 'Supplier C'}
     ];
 
     before(() => {
@@ -92,7 +92,12 @@ describe('/suppliers', () => {
           response.result.forEach(s => expect(s).to.have.property('created_at'));
 
           const result = response.result.map(s => _.omit(s, 'created_at'));
-          expect(result).to.deep.equal([suppliers[1], suppliers[0], suppliers[2]]);
+
+          expect(result).to.deep.equal([
+            _.assign({id: 'B'}, suppliers[1]),
+            _.assign({id: 'A'}, suppliers[0]),
+            _.assign({id: 'C'}, suppliers[2])
+          ]);
         });
     });
   });

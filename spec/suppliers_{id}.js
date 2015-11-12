@@ -48,7 +48,7 @@ describe('/suppliers/{id}', () => {
 
   describe('put', () => {
     let createResponse;
-    const createSupplierPayload = {id: 'SUP', name: 'A Supplier'};
+    const createSupplierPayload = {name: 'A Supplier'};
 
     before(() => {
       return specRequest({url: '/suppliers/SUP', method: 'PUT', payload: createSupplierPayload})
@@ -79,7 +79,7 @@ describe('/suppliers/{id}', () => {
 
     describe('as update', () => {
       let updateResponse;
-      const updatedSupplierPayload = {id: 'SUP', name: 'New name'};
+      const updatedSupplierPayload = {name: 'New name'};
 
       before(() => {
         return specRequest({url: '/suppliers/SUP', method: 'PUT', payload: updatedSupplierPayload})
@@ -104,37 +104,15 @@ describe('/suppliers/{id}', () => {
     });
 
     describe('validation', () => {
-      const putSupplierPayload = {id: 'SUP', name: 'supplier'};
+      const putSupplierPayload = {name: 'supplier'};
 
-      it('requires id', () => {
-        const payload = _.omit(putSupplierPayload, 'id');
-
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "id" fails because ["id" is required]');
-          });
-      });
-
-      it('requires id to be a string', () => {
-        const payload = _.omit(putSupplierPayload, 'id');
-        payload.id = 1;
+      it('rejects id', () => {
+        const payload = _.assign({id: 'SUP'}, putSupplierPayload);
 
         return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
           .then(response => {
             expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "id" fails because ["id" must be a string]');
-          });
-      });
-
-      it('requires id in path to match id in payload', () => {
-        const payload = _.omit(putSupplierPayload, 'id');
-        payload.id = 'NOTSUP';
-
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "id" fails because ["id" must be SUP]');
+            expect(response.result.message).to.equal('"id" is not allowed');
           });
       });
 
@@ -166,7 +144,7 @@ describe('/suppliers/{id}', () => {
         return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
           .then(response => {
             expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "created_at" fails because ["created_at" is not allowed]');
+            expect(response.result.message).to.equal('"created_at" is not allowed');
           });
       });
     });

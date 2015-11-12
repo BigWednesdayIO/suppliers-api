@@ -125,13 +125,18 @@ describe('Supplier', () => {
   describe('upsert', () => {
     describe('as create', () => {
       let createdSupplier;
-      const newSupplier = {id: 'new', name: 'new supplier'};
+      const testId = 'supplierid';
+      const newSupplier = {name: 'new supplier'};
 
       before(() => {
-        return Supplier.upsert(newSupplier)
+        return Supplier.upsert(testId, newSupplier)
           .then(supplier => {
             createdSupplier = supplier;
           });
+      });
+
+      it('sets the id', () => {
+        expect(createdSupplier.id).to.deep.equal(testId);
       });
 
       it('sets created date', () => {
@@ -154,10 +159,10 @@ describe('Supplier', () => {
 
     describe('as update', () => {
       let updatedSupplier;
-      const upsertSupplier = {id: 'A', name: 'updated name'};
+      const upsertSupplier = {name: 'updated name'};
 
       before(() => {
-        return Supplier.upsert(upsertSupplier)
+        return Supplier.upsert('A', upsertSupplier)
           .then(supplier => {
             updatedSupplier = supplier;
           });
