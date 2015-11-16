@@ -39,9 +39,11 @@ describe('/suppliers/{id}', () => {
       const resource = _.clone(createSupplierPayload);
       resource.id = createResponse.result.id;
 
-      expect(getResponse.result).to.have.property('created_at');
+      expect(getResponse.result).to.have.property('_metadata');
+      expect(getResponse.result._metadata).to.have.property('created');
+      expect(getResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-      const result = _.omit(getResponse.result, 'created_at');
+      const result = _.omit(getResponse.result, '_metadata');
       expect(result).to.deep.equal(resource);
     });
   });
@@ -70,9 +72,11 @@ describe('/suppliers/{id}', () => {
         const resource = _.clone(createSupplierPayload);
         resource.id = createResponse.result.id;
 
-        expect(createResponse.result).to.have.property('created_at');
+        expect(createResponse.result).to.have.property('_metadata');
+        expect(createResponse.result._metadata).to.have.property('created');
+        expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-        const result = _.omit(createResponse.result, 'created_at');
+        const result = _.omit(createResponse.result, '_metadata');
         expect(result).to.deep.equal(resource);
       });
     });
@@ -96,9 +100,11 @@ describe('/suppliers/{id}', () => {
         const resource = _.clone(updatedSupplierPayload);
         resource.id = updateResponse.result.id;
 
-        expect(updateResponse.result).to.have.property('created_at');
+        expect(updateResponse.result).to.have.property('_metadata');
+        expect(updateResponse.result._metadata).to.have.property('created');
+        expect(updateResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-        const result = _.omit(updateResponse.result, 'created_at');
+        const result = _.omit(updateResponse.result, '_metadata');
         expect(result).to.deep.equal(resource);
       });
     });
@@ -137,14 +143,14 @@ describe('/suppliers/{id}', () => {
           });
       });
 
-      it('does not allow created_at', () => {
+      it('does not allow _metadata', () => {
         const payload = _.clone(putSupplierPayload);
-        payload.created_at = new Date();
+        payload._metadata = {created: new Date()};
 
         return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
           .then(response => {
             expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('"created_at" is not allowed');
+            expect(response.result.message).to.equal('"_metadata" is not allowed');
           });
       });
     });

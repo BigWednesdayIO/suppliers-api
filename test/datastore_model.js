@@ -14,9 +14,9 @@ describe('Datastore Model', () => {
   const testDate = new Date();
 
   const persistedModels = [
-    {id: 'A', name: 'Model A', created_at: new Date().setTime(testDate.getTime() + 2000)},
-    {id: 'B', name: 'Model B', created_at: new Date().setTime(testDate.getTime())},
-    {id: 'C', name: 'Model C', created_at: new Date().setTime(testDate.getTime() + 1000)}
+    {id: 'A', name: 'Model A', _metadata_created: new Date().setTime(testDate.getTime() + 2000)},
+    {id: 'B', name: 'Model B', _metadata_created: new Date().setTime(testDate.getTime())},
+    {id: 'C', name: 'Model C', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}
   ];
 
   const newKey = {key: 'new'};
@@ -59,8 +59,8 @@ describe('Datastore Model', () => {
 
       let data = persistedModels;
 
-      if (query.sortOrder === 'created_at') {
-        data = _.sortBy(persistedModels, 'created_at');
+      if (query.sortOrder === '_metadata_created') {
+        data = _.sortBy(persistedModels, '_metadata_created');
       }
 
       callback(null, data.map(model => {
@@ -99,11 +99,15 @@ describe('Datastore Model', () => {
     });
 
     it('sets created date', () => {
-      expect(createdModel.created_at).to.deep.equal(testDate);
+      expect(createdModel._metadata.created).to.deep.equal(testDate);
     });
 
     it('persists the model', () => {
-      sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: createdModel}));
+      const persistedData = _.clone(createdModel);
+      persistedData._metadata_created = persistedData._metadata.created;
+      delete persistedData._metadata;
+
+      sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: persistedData}));
     });
   });
 
@@ -111,7 +115,10 @@ describe('Datastore Model', () => {
     it('retrieves the model by id', () => {
       return DatastoreModel.get('A')
         .then(model => {
-          expect(model).to.equal(persistedModels[0]);
+          model._metadata_created = model._metadata.created;
+          delete model._metadata;
+
+          expect(model).to.deep.equal(persistedModels[0]);
         });
     });
 
@@ -141,12 +148,17 @@ describe('Datastore Model', () => {
       });
 
       it('sets created date', () => {
-        expect(createdModel.created_at).to.deep.equal(testDate);
+        expect(createdModel._metadata.created).to.deep.equal(testDate);
       });
 
       it('persists the model', () => {
         sinon.assert.calledWith(keyStub, testKind);
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: createdModel}));
+
+        const persistedData = _.clone(createdModel);
+        persistedData._metadata_created = persistedData._metadata.created;
+        delete persistedData._metadata;
+
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: persistedData}));
       });
 
       it('sets _inserted property', () => {
@@ -169,9 +181,11 @@ describe('Datastore Model', () => {
           });
       });
 
-      it('updates an existing model', () => {
-        const persistedData = upsertModel;
-        persistedData.created_at = persistedModels[0].created_at;
+      it('updates the persisted model', () => {
+        const persistedData = _.clone(upsertModel);
+        persistedData.id = 'A';
+        persistedData._metadata_created = persistedModels[0]._metadata_created;
+        delete persistedData._metadata;
 
         sinon.assert.calledWithMatch(saveStub, sinon.match({key: existingKey, method: 'update', data: persistedData}));
       });
