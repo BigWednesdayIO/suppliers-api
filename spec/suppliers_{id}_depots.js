@@ -81,6 +81,19 @@ describe('/suppliers/{id}/depots', () => {
   });
 
   describe('get', () => {
+    // const depots = [
+    //   {name: 'Depot 1'},
+    //   {name: 'Depot 2'},
+    //   {name: 'Depot 3'}
+    // ];
+
+    // before(() => {
+    //   return specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier 2'}})
+    //     .then(() => specRequest({url: '/suppliers/1/depots/3', method: 'PUT', payload: depots[2]}))
+    //     .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depots[0]}))
+    //     .then(() => specRequest({url: '/suppliers/1/depots/2', method: 'PUT', payload: depots[1]}));
+    // });
+
     it('returns http 404 for a non existant supplier', () => {
       return specRequest({url: '/suppliers/123/depots', method: 'GET'})
         .then(response => {
@@ -88,5 +101,26 @@ describe('/suppliers/{id}/depots', () => {
           expect(response.result).to.have.property('message', 'Supplier "123" not found.');
         });
     });
+
+    // it('returns depots for the supplier', () => {
+    //   return specRequest({url: 'suppliers/1/depots', method: 'GET'})
+    //     .then(response => {
+    //       expect(response.statusCode).to.equal(200);
+
+    //       response.result.forEach(depot => {
+    //         expect(depot).to.have.property('_metadata');
+    //         expect(depot._metadata).to.have.property('created');
+    //         expect(depot._metadata.created).to.be.an.instanceOf(Date);
+    //       });
+
+    //       const result = response.result.map(depot => _.omit(depot, '_metadata'));
+
+    //       expect(result).to.deep.equal([
+    //         _.assign({id: '3'}, depots[2]),
+    //         _.assign({id: '1'}, depots[0]),
+    //         _.assign({id: '2'}, depots[1])
+    //       ]);
+    //     });
+    // });
   });
 });
