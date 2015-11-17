@@ -6,6 +6,14 @@ const specRequest = require('./spec_request');
 
 describe('/suppliers/{id}/depots/{id}', () => {
   describe('put', () => {
+    it('returns http 404 when supplier does not exist', () => {
+      return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: {name: 'test'}})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+          expect(response.result).to.have.property('message', 'Supplier "123" not found.');
+        });
+    });
+
     describe('as create', () => {
       let createResponse;
       const createPayload = {name: 'A Depot'};
@@ -15,14 +23,6 @@ describe('/suppliers/{id}/depots/{id}', () => {
           .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: createPayload}))
           .then(response => {
             createResponse = response;
-          });
-      });
-
-      it('returns http 404 when supplier does not exist', () => {
-        return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: createPayload})
-          .then(response => {
-            expect(response.statusCode).to.equal(404);
-            expect(response.result).to.have.property('message', 'Supplier "123" not found.');
           });
       });
 
@@ -43,6 +43,36 @@ describe('/suppliers/{id}/depots/{id}', () => {
         expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
         const result = _.omit(createResponse.result, '_metadata');
+        expect(result).to.deep.equal(resource);
+      });
+    });
+
+    describe('as update', () => {
+      let updateResponse;
+      const updatePayload = {name: 'A new name'};
+
+      beforeEach(() => {
+        return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+          .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: {name: 'a depot'}}))
+          .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: updatePayload}))
+          .then(response => {
+            updateResponse = response;
+          });
+      });
+
+      it('returns http 200', () => {
+        expect(updateResponse.statusCode).to.equal(200);
+      });
+
+      it('returns a depot resource', () => {
+        const resource = _.clone(updatePayload);
+        resource.id = '1';
+
+        expect(updateResponse.result).to.have.property('_metadata');
+        expect(updateResponse.result._metadata).to.have.property('created');
+        expect(updateResponse.result._metadata.created).to.be.an.instanceOf(Date);
+
+        const result = _.omit(updateResponse.result, '_metadata');
         expect(result).to.deep.equal(resource);
       });
     });
