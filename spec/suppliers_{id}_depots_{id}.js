@@ -123,4 +123,49 @@ describe('/suppliers/{id}/depots/{id}', () => {
       });
     });
   });
+
+  describe('get', () => {
+    let getResponse;
+    const depot = {name: 'a depot'};
+
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depot}))
+        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'GET'}))
+        .then(response => {
+          getResponse = response;
+        });
+    });
+
+    it('returns http 404 when supplier does not exist', () => {
+      return specRequest({url: '/suppliers/123/depots/1', method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+          expect(response.result).to.have.property('message', 'Supplier "123" not found.');
+        });
+    });
+
+    it('returns http 404 when depot does not exist', () => {
+      return specRequest({url: '/suppliers/1/depots/2', method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+        });
+    });
+
+    it('returns http 200', () => {
+      expect(getResponse.statusCode).to.equal(200);
+    });
+
+    it('returns the depot resource', () => {
+      const resource = _.clone(depot);
+      resource.id = '1';
+
+      expect(getResponse.result).to.have.property('_metadata');
+      expect(getResponse.result._metadata).to.have.property('created');
+      expect(getResponse.result._metadata.created).to.be.an.instanceOf(Date);
+
+      const result = _.omit(getResponse.result, '_metadata');
+      expect(result).to.deep.equal(resource);
+    });
+  });
 });

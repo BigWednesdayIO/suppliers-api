@@ -344,4 +344,25 @@ describe('Supplier', () => {
       expect(_.map(foundDepots, 'id')).to.deep.equal(['D3', 'D2', 'D1']);
     });
   });
+
+  describe('getDepot', () => {
+    it('retrieves the depot by id', () => {
+      return Supplier.get('A')
+        .then(supplier => supplier.getDepot('D1'))
+        .then(depot => {
+          depot._metadata_created = depot._metadata.created;
+          delete depot._metadata;
+
+          expect(depot).to.deep.equal(depotEntities[0].data);
+        });
+    });
+
+    it('returns nothing when the supplier does not exist', () => {
+      return Supplier.get('A')
+        .then(supplier => supplier.getDepot('123'))
+        .then(depot => {
+          expect(depot).to.not.exist;
+        });
+    });
+  });
 });
