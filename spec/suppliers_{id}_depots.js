@@ -5,18 +5,18 @@ const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
 describe('/suppliers/{id}/depots', () => {
-  const createPayload = {name: 'A depot'};
-  let createResponse;
-
-  before(() => {
-    return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier 1'}})
-      .then(() => specRequest({url: '/suppliers/1/depots', method: 'POST', payload: createPayload}))
-      .then(response => {
-        createResponse = response;
-      });
-  });
-
   describe('post', () => {
+    const createPayload = {name: 'A depot'};
+    let createResponse;
+
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier 1'}})
+        .then(() => specRequest({url: '/suppliers/1/depots', method: 'POST', payload: createPayload}))
+        .then(response => {
+          createResponse = response;
+        });
+    });
+
     it('returns http 404 for a non existant supplier', () => {
       return specRequest({url: '/suppliers/123/depots', method: 'POST', payload: {name: 'Depot 1'}})
         .then(response => {
@@ -87,8 +87,9 @@ describe('/suppliers/{id}/depots', () => {
       {name: 'Depot 3'}
     ];
 
-    before(() => {
-      return specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier 2'}})
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier 1'}})
+        .then(() => specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier 2'}}))
         .then(() => specRequest({url: '/suppliers/1/depots/3', method: 'PUT', payload: depots[2]}))
         .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depots[0]}))
         .then(() => specRequest({url: '/suppliers/1/depots/2', method: 'PUT', payload: depots[1]}))

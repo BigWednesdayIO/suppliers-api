@@ -10,7 +10,7 @@ describe('/suppliers', () => {
   describe('post', () => {
     let createResponse;
 
-    before(() => {
+    beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
           createResponse = response;
@@ -79,9 +79,8 @@ describe('/suppliers', () => {
       {name: 'Supplier C'}
     ];
 
-    before(() => {
-      return require('./hooks').deleteTestData()
-        .then(() => specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]}))
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]})
         .then(() => specRequest({url: '/suppliers/A', method: 'PUT', payload: suppliers[0]}))
         .then(() => specRequest({url: '/suppliers/C', method: 'PUT', payload: suppliers[2]}));
     });

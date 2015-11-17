@@ -3,14 +3,14 @@
 const _ = require('lodash');
 const dataset = require('../lib/dataset');
 
-module.exports.deleteTestData = () => {
-  const query = dataset.createQuery('Supplier');
+module.exports.deleteTestData = kind => {
+  const query = dataset.createQuery(kind);
 
   return new Promise((resolve, reject) => {
     dataset.runQuery(query, (err, res) => {
       if (err) {
         console.error(err);
-        console.log('Error deleting Supplier data');
+        console.log(`Error getting keys to delete ${kind} data`);
 
         reject(err);
       }
@@ -19,7 +19,7 @@ module.exports.deleteTestData = () => {
       dataset.delete(keys, err => {
         if (err) {
           console.error(err);
-          console.log('Error deleting Supplier data');
+          console.log(`Error deleting ${kind} data`);
 
           reject(err);
         }
@@ -30,4 +30,7 @@ module.exports.deleteTestData = () => {
   });
 };
 
-after(() => module.exports.deleteTestData());
+afterEach(() => Promise.all([
+  module.exports.deleteTestData('Supplier'),
+  module.exports.deleteTestData('Depot')
+]));

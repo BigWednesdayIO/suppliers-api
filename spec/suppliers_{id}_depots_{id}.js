@@ -6,18 +6,18 @@ const specRequest = require('./spec_request');
 
 describe('/suppliers/{id}/depots/{id}', () => {
   describe('put', () => {
-    let createResponse;
-    const createPayload = {name: 'A Depot'};
-
-    before(() => {
-      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
-        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: createPayload}))
-        .then(response => {
-          createResponse = response;
-        });
-    });
-
     describe('as create', () => {
+      let createResponse;
+      const createPayload = {name: 'A Depot'};
+
+      beforeEach(() => {
+        return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+          .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: createPayload}))
+          .then(response => {
+            createResponse = response;
+          });
+      });
+
       it('returns http 404 when supplier does not exist', () => {
         return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: createPayload})
           .then(response => {

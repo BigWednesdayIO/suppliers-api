@@ -11,7 +11,7 @@ describe('/suppliers/{id}', () => {
     let createResponse;
     let getResponse;
 
-    before(() => {
+    beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
           expect(response.statusCode).to.equal(201);
@@ -52,8 +52,8 @@ describe('/suppliers/{id}', () => {
     let createResponse;
     const createSupplierPayload = {name: 'A Supplier'};
 
-    before(() => {
-      return specRequest({url: '/suppliers/SUP', method: 'PUT', payload: createSupplierPayload})
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: createSupplierPayload})
         .then(response => {
           createResponse = response;
         });
@@ -85,8 +85,9 @@ describe('/suppliers/{id}', () => {
       let updateResponse;
       const updatedSupplierPayload = {name: 'New name'};
 
-      before(() => {
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload: updatedSupplierPayload})
+      beforeEach(() => {
+        return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'initial name'}})
+          .then(() => specRequest({url: '/suppliers/1', method: 'PUT', payload: updatedSupplierPayload}))
           .then(response => {
             updateResponse = response;
           });
