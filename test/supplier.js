@@ -19,7 +19,12 @@ describe('Supplier', () => {
     {key: {path: ['Supplier', 3]}, data: {id: 'C', name: 'Supplier C', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}}
   ];
 
-  const depotEntities = [{key: {path: ['Supplier', 1, 'Depot', 1]}, data: {id: 'D1', name: 'Depot 1', _metadata_created: new Date()}}];
+  const depotEntities = [
+    {key: {path: ['Supplier', 1, 'Depot', 1]}, data: {id: 'D1', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 5000)}},
+    {key: {path: ['Supplier', 1, 'Depot', 2]}, data: {id: 'D2', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}},
+    {key: {path: ['Supplier', 1, 'Depot', 3]}, data: {id: 'D3', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}},
+    {key: {path: ['Supplier', 2, 'Depot', 1]}, data: {id: 'S2D1', name: 'Supplier 2 Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}}
+  ];
 
   before(() => {
     sandbox = sinon.sandbox.create();
@@ -29,13 +34,12 @@ describe('Supplier', () => {
     sandbox.stub(dataset, 'createQuery', kind => {
       return {
         kind,
-        filteredId: undefined,
-        sortOrder: undefined,
         filter(_, id) {
           this.filteredId = id;
           return this;
         },
-        hasAncestor() {
+        hasAncestor(key) {
+          this.ancestorKey = key;
           return this;
         },
         order(order) {
@@ -47,6 +51,11 @@ describe('Supplier', () => {
 
     sandbox.stub(dataset, 'runQuery', (query, callback) => {
       let data = query.kind === 'Supplier' ? supplierEntities : depotEntities;
+
+      if (query.ancestorKey) {
+        const keyLength = query.ancestorKey.path.length;
+        data = _.filter(data, entity => _.eq(entity.key.path.slice(0, keyLength), query.ancestorKey.path));
+      }
 
       if (query.filteredId) {
         const entity = _.find(data, entity => entity.data.id === query.filteredId);
@@ -327,6 +336,29 @@ describe('Supplier', () => {
       it('makes _inserted property non-enumerable', () => {
         expect(updatedDepot._inserted.propertyIsEnumerable()).to.equal(false);
       });
+    });
+  });
+
+  describe('findDepots', () => {
+    let foundDepots;
+
+    before(() => {
+      return Supplier.get('A')
+        .then(supplier => supplier.findDepots())
+        .then(depots => {
+          foundDepots = depots;
+        });
+    });
+
+    it('returns all depots for the supplier', () => {
+      depotEntities.slice(0, 3).forEach(entity => {
+        const expectedDepot = _.find(foundDepots, {id: entity.data.id});
+        expect(expectedDepot).to.exist;
+      });
+    });
+
+    it('returns depots sorted by default field created_at', () => {
+      expect(_.map(foundDepots, 'id')).to.deep.equal(['D3', 'D2', 'D1']);
     });
   });
 });
