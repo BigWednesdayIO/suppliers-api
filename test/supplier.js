@@ -9,21 +9,19 @@ describe('Supplier', () => {
   let Supplier;
   let sandbox;
   let saveStub;
-  let keyStub;
-  const newSupplierKey = {path: ['Supplier']};
   const testDate = new Date();
 
   const supplierEntities = [
-    {key: {path: ['Supplier', 1]}, data: {id: 'A', name: 'Supplier A', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}},
-    {key: {path: ['Supplier', 2]}, data: {id: 'B', name: 'Supplier B', _metadata_created: new Date().setTime(testDate.getTime())}},
-    {key: {path: ['Supplier', 3]}, data: {id: 'C', name: 'Supplier C', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}}
+    {key: {path: ['Supplier', 'A']}, data: {id: 'A', name: 'Supplier A', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}},
+    {key: {path: ['Supplier', 'B']}, data: {id: 'B', name: 'Supplier B', _metadata_created: new Date().setTime(testDate.getTime())}},
+    {key: {path: ['Supplier', 'C']}, data: {id: 'C', name: 'Supplier C', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}}
   ];
 
   const depotEntities = [
-    {key: {path: ['Supplier', 1, 'Depot', 1]}, data: {id: 'D1', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 5000)}},
-    {key: {path: ['Supplier', 1, 'Depot', 2]}, data: {id: 'D2', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}},
-    {key: {path: ['Supplier', 1, 'Depot', 3]}, data: {id: 'D3', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}},
-    {key: {path: ['Supplier', 2, 'Depot', 1]}, data: {id: 'S2D1', name: 'Supplier 2 Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}}
+    {key: {path: ['Supplier', 'A', 'Depot', 'D1']}, data: {id: 'D1', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 5000)}},
+    {key: {path: ['Supplier', 'A', 'Depot', 'D2']}, data: {id: 'D2', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}},
+    {key: {path: ['Supplier', 'A', 'Depot', 'D3']}, data: {id: 'D3', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}},
+    {key: {path: ['Supplier', 'B', 'Depot', 'S2D1']}, data: {id: 'S2D1', name: 'Supplier 2 Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}}
   ];
 
   before(() => {
@@ -34,10 +32,6 @@ describe('Supplier', () => {
     sandbox.stub(dataset, 'createQuery', kind => {
       return {
         kind,
-        filter(_, id) {
-          this.filteredId = id;
-          return this;
-        },
         hasAncestor(key) {
           this.ancestorKey = key;
           return this;
@@ -57,16 +51,6 @@ describe('Supplier', () => {
         data = _.filter(data, entity => _.eq(entity.key.path.slice(0, keyLength), query.ancestorKey.path));
       }
 
-      if (query.filteredId) {
-        const entity = _.find(data, entity => entity.data.id === query.filteredId);
-
-        if (entity) {
-          return callback(null, [{key: entity.key, data: entity.data}]);
-        }
-
-        return callback(null, []);
-      }
-
       if (query.sortOrder === '_metadata_created') {
         data = _.sortBy(data, entity => entity.data._metadata_created);
       }
@@ -76,19 +60,16 @@ describe('Supplier', () => {
       }));
     });
 
-    keyStub = sandbox.stub(dataset, 'key', path => {
-      return {path: [].concat(path)};
+    sandbox.stub(dataset, 'get', (key, callback) => {
+      callback(null, _.find(supplierEntities.concat(depotEntities), {key}));
+    });
+
+    sandbox.stub(dataset, 'key', path => {
+      return {path};
     });
 
     saveStub = sandbox.stub(dataset, 'save', (args, callback) => {
-      let key;
-
-      if (args.method === 'insert_auto_id') {
-        key = _.cloneDeep(args.key);
-        key.path.push(1);
-      }
-
-      callback(null, {mutation_result: {insert_auto_id_key: [key]}});
+      callback();
     });
 
     Supplier = require('../lib/supplier');
@@ -122,7 +103,9 @@ describe('Supplier', () => {
       persistedData._metadata_created = persistedData._metadata.created;
       delete persistedData._metadata;
 
-      sinon.assert.calledWithMatch(saveStub, sinon.match({key: newSupplierKey, method: 'insert_auto_id', data: persistedData}));
+      const key = {path: ['Supplier', persistedData.id]};
+
+      sinon.assert.calledWithMatch(saveStub, sinon.match({key, data: persistedData}));
     });
   });
 
@@ -167,13 +150,13 @@ describe('Supplier', () => {
       });
 
       it('persists the supplier', () => {
-        sinon.assert.calledWith(keyStub, 'Supplier');
-
         const persistedData = _.clone(createdSupplier);
         persistedData._metadata_created = persistedData._metadata.created;
         delete persistedData._metadata;
 
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newSupplierKey, method: 'insert_auto_id', data: persistedData}));
+        const key = {path: ['Supplier', persistedData.id]};
+
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key, data: persistedData}));
       });
 
       it('sets _inserted property', () => {
@@ -202,7 +185,7 @@ describe('Supplier', () => {
         persistedData._metadata_created = supplierEntities[0].data._metadata_created;
         delete persistedData._metadata;
 
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: supplierEntities[0].key, method: 'update', data: persistedData}));
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: supplierEntities[0].key, data: persistedData}));
       });
 
       it('sets _inserted property', () => {
@@ -241,7 +224,7 @@ describe('Supplier', () => {
     let createdDepot;
 
     before(() => {
-      return Supplier.create({name: 'a supplier'})
+      return Supplier.upsert('1', {name: 'a supplier'})
         .then(supplier => supplier.createDepot(attributes))
         .then(depot => {
           createdDepot = depot;
@@ -261,9 +244,9 @@ describe('Supplier', () => {
       persistedData._metadata_created = persistedData._metadata.created;
       delete persistedData._metadata;
 
-      const depotKey = {path: ['Supplier', 1, 'Depot']};
+      const depotKey = {path: ['Supplier', '1', 'Depot', createdDepot.id]};
 
-      sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotKey, method: 'insert_auto_id', data: persistedData}));
+      sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotKey, data: persistedData}));
     });
   });
 
@@ -274,7 +257,7 @@ describe('Supplier', () => {
       const newDepot = {name: 'new depot'};
 
       before(() => {
-        return Supplier.create({name: 'supplier'})
+        return Supplier.upsert('1', {name: 'supplier'})
           .then(supplier => supplier.upsertDepot(testId, newDepot))
           .then(depot => {
             createdDepot = depot;
@@ -294,9 +277,9 @@ describe('Supplier', () => {
         persistedData._metadata_created = persistedData._metadata.created;
         delete persistedData._metadata;
 
-        const depotKey = {path: ['Supplier', 1, 'Depot']};
+        const depotKey = {path: ['Supplier', '1', 'Depot', persistedData.id]};
 
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotKey, method: 'insert_auto_id', data: persistedData}));
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotKey, data: persistedData}));
       });
 
       it('sets _inserted property', () => {
@@ -326,7 +309,7 @@ describe('Supplier', () => {
         persistedData._metadata_created = depotEntities[0].data._metadata_created;
         delete persistedData._metadata;
 
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotEntities[0].key, method: 'update', data: persistedData}));
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotEntities[0].key, data: persistedData}));
       });
 
       it('sets _inserted property', () => {
