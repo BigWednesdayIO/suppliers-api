@@ -9,8 +9,8 @@ describe('/depots/{id}', () => {
     it('returns http 400 when supplier does not exist', () => {
       return specRequest({url: '/depots/1', method: 'PUT', payload: {name: 'test', supplier_id: '123'}})
         .then(response => {
-          expect(response.statusCode).to.equal(404);
-          expect(response.result).to.have.property('message', 'Supplier "123" not found.');
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "supplier_id" fails because ["supplier_id" must be one of [1]]');
         });
     });
 
