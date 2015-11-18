@@ -9,6 +9,7 @@ describe('Depot', () => {
   let Depot;
   let sandbox;
   let saveStub;
+  let deleteStub;
   const testDate = new Date();
 
   const depotEntities = [
@@ -57,6 +58,10 @@ describe('Depot', () => {
     });
 
     saveStub = sandbox.stub(dataset, 'save', (args, callback) => {
+      callback();
+    });
+
+    deleteStub = sandbox.stub(dataset, 'delete', (key, callback) => {
       callback();
     });
 
@@ -204,6 +209,17 @@ describe('Depot', () => {
 
     it('returns depots sorted by default field created_at', () => {
       expect(_.map(foundDepots, 'id')).to.deep.equal(['B', 'C', 'A']);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes the persisted depot', () => {
+      const key = {path: ['Depot', '1']};
+
+      return Depot.delete('1')
+        .then(() => {
+          sinon.assert.calledWith(deleteStub, key);
+        });
     });
   });
 });

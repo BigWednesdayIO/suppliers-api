@@ -181,4 +181,21 @@ describe('/depots/{id}', () => {
       expect(result).to.deep.equal(resource);
     });
   });
+
+  describe('delete', () => {
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+        .then(() => specRequest({url: '/depots/1', method: 'PUT', payload: {name: 'depot', supplier_id: '1'}}));
+    });
+
+    it('returns http 404 when depot does not exist', () => {
+      return specRequest({url: '/depots/123', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(404));
+    });
+
+    it('returns http 204', () => {
+      return specRequest({url: '/depots/1', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(204));
+    });
+  });
 });
