@@ -39,8 +39,14 @@ module.exports = function (options) {
 
             const ignoredStatusCodes = [204, 400, 401, 403, 404, 409, 500];
 
-            if (!_.includes(ignoredStatusCodes, response.statusCode) && !swaggerMethod.responses[response.statusCode]) {
+            const statusResponse = swaggerMethod.responses[response.statusCode];
+
+            if (!_.includes(ignoredStatusCodes, response.statusCode) && !statusResponse) {
               return reject(new Error(`${response.statusCode} response for route ${route} is undocumented.`));
+            }
+
+            if (statusResponse && statusResponse.description.length === 0) {
+              return reject(new Error(`${response.statusCode} response for route ${route} is missing description.`));
             }
 
             resolve(response);
