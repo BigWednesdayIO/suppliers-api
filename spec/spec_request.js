@@ -37,9 +37,9 @@ module.exports = function (options) {
               return reject(new Error(`${method} for route ${route} is undocumented.`));
             }
 
-            const standardErrorStatusCodes = [400, 401, 403, 404, 500];
+            const ignoredStatusCodes = [204, 400, 401, 403, 404, 500];
 
-            if (!_.includes(standardErrorStatusCodes, response.statusCode) && !swaggerMethod.responses[response.statusCode]) {
+            if (!_.includes(ignoredStatusCodes, response.statusCode) && !swaggerMethod.responses[response.statusCode]) {
               return reject(new Error(`${response.statusCode} response for route ${route} is undocumented.`));
             }
 
