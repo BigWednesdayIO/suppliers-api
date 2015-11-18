@@ -44,7 +44,7 @@
   "dependencies": {
     "boom": "^3.0.0",
     "cuid": "^1.3.8",
-    "gcloud": "github:stephenplusplus/gcloud-node#spp--gcd-no-auth",
+    "gcloud": "^0.25.0",
     "hapi": "^11.1.0",
     "hapi-swaggered": "^2.4.1",
     "joi": "^7.0.0",
