@@ -156,4 +156,30 @@ describe('/suppliers/{id}', () => {
       });
     });
   });
+
+  describe('delete', () => {
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+        .then(() => specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier'}}))
+        .then(() => specRequest({url: '/depots/1', method: 'PUT', payload: {name: 'depot', supplier_id: '2'}}));
+    });
+
+    it('returns http 404 when supplier does not exist', () => {
+      return specRequest({url: '/suppliers/123', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(404));
+    });
+
+    it('returns http 409 when supplier has associated depots', () => {
+      return specRequest({url: '/suppliers/2', method: 'DELETE'})
+        .then(response => {
+          expect(response.statusCode).to.equal(409);
+          expect(response.result.message).to.equal('Supplier "2" has associated depots, which must be deleted first.');
+        });
+    });
+
+    it('returns http 204', () => {
+      return specRequest({url: '/suppliers/1', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(204));
+    });
+  });
 });

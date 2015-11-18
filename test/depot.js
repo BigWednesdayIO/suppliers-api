@@ -15,7 +15,9 @@ describe('Depot', () => {
   const depotEntities = [
     {key: {path: ['Depot', 'A']}, data: {id: 'A', name: 'Depot A', supplier_id: '1', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}},
     {key: {path: ['Depot', 'B']}, data: {id: 'B', name: 'Depot B', supplier_id: '1', _metadata_created: new Date().setTime(testDate.getTime())}},
-    {key: {path: ['Depot', 'C']}, data: {id: 'C', name: 'Depot C', supplier_id: '1', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}}
+    {key: {path: ['Depot', 'C']}, data: {id: 'C', name: 'Depot C', supplier_id: '1', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}},
+    {key: {path: ['Depot', '1']}, data: {id: '1', name: 'Supplier 2 depot 1', supplier_id: '2', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}},
+    {key: {path: ['Depot', '2']}, data: {id: '2', name: 'Supplier 2 depot 2', supplier_id: '2', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}}
   ];
 
   before(() => {
@@ -26,6 +28,10 @@ describe('Depot', () => {
     sandbox.stub(dataset, 'createQuery', kind => {
       return {
         kind,
+        filter(field, value) {
+          this.appliedFilter = {field, value};
+          return this;
+        },
         hasAncestor(key) {
           this.ancestorKey = key;
           return this;
@@ -39,6 +45,11 @@ describe('Depot', () => {
 
     sandbox.stub(dataset, 'runQuery', (query, callback) => {
       let data = depotEntities;
+
+      if (query.appliedFilter && query.appliedFilter.field.endsWith(' =')) {
+        const field = query.appliedFilter.field.replace(' =', '');
+        data = _.filter(data, entity => _.eq(entity.data[field], query.appliedFilter.value));
+      }
 
       if (query.sortOrder === '_metadata_created') {
         data = _.sortBy(data, entity => entity.data._metadata_created);
@@ -192,23 +203,28 @@ describe('Depot', () => {
   });
 
   describe('find', () => {
-    let foundDepots;
-
-    before(() => {
-      return Depot.find().then(depot => {
-        foundDepots = depot;
-      });
-    });
-
     it('returns all depot', () => {
-      depotEntities.forEach(entity => {
-        const expectedDepot = _.find(foundDepots, {id: entity.data.id});
-        expect(expectedDepot).to.exist;
-      });
+      return Depot.find()
+        .then(depots => {
+          depotEntities.forEach(entity => {
+            const expectedDepot = _.find(depots, {id: entity.data.id});
+            expect(expectedDepot).to.exist;
+          });
+        });
     });
 
     it('returns depots sorted by default field created_at', () => {
-      expect(_.map(foundDepots, 'id')).to.deep.equal(['B', 'C', 'A']);
+      return Depot.find()
+        .then(depots => {
+          expect(_.map(depots, 'id')).to.deep.equal(['B', 'C', 'A', '1', '2']);
+        });
+    });
+
+    it('returns depots for a supplier', () => {
+      return Depot.find({supplier_id: '2'})
+        .then(depots => {
+          expect(_.map(depots, 'id')).to.deep.equal(['1', '2']);
+        });
     });
   });
 
