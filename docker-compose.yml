@@ -2,6 +2,7 @@ gclouddatastore:
   image: risaacson/gcd-local:v1beta2-rev1-3.0.0
   environment:
     - PROJ_ID=suppliers
+    - CONSISTENCY=1.0
   ports:
     - '8080'
 api:
