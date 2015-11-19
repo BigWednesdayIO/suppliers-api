@@ -9,6 +9,7 @@ describe('Supplier', () => {
   let Supplier;
   let sandbox;
   let saveStub;
+  let deleteStub;
   const testDate = new Date();
 
   const supplierEntities = [
@@ -69,6 +70,10 @@ describe('Supplier', () => {
     });
 
     saveStub = sandbox.stub(dataset, 'save', (args, callback) => {
+      callback();
+    });
+
+    deleteStub = sandbox.stub(dataset, 'delete', (key, callback) => {
       callback();
     });
 
@@ -219,6 +224,17 @@ describe('Supplier', () => {
     });
   });
 
+  describe('delete', () => {
+    it('deletes the persisted supplier', () => {
+      const key = {path: ['Supplier', '1']};
+
+      return Supplier.delete('1')
+        .then(() => {
+          sinon.assert.calledWith(deleteStub, key);
+        });
+    });
+  });
+
   describe('createDepot', () => {
     const attributes = {name: 'a depot'};
     let createdDepot;
@@ -362,6 +378,18 @@ describe('Supplier', () => {
         .then(supplier => supplier.getDepot('123'))
         .then(depot => {
           expect(depot).to.not.exist;
+        });
+    });
+  });
+
+  describe('deleteDepot', () => {
+    it('deletes the persisted depot', () => {
+      const key = {path: ['Supplier', 'A', 'Depot', '1']};
+
+      return Supplier.get('A')
+        .then(supplier => supplier.deleteDepot('1'))
+        .then(() => {
+          sinon.assert.calledWith(deleteStub, key);
         });
     });
   });

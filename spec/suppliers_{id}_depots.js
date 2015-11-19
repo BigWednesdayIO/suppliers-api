@@ -125,4 +125,29 @@ describe('/suppliers/{id}/depots', () => {
         });
     });
   });
+
+  describe('delete', () => {
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: {name: 'depot'}}));
+    });
+
+    it('returns http 404 when supplier does not exist', () => {
+      return specRequest({url: '/suppliers/123/depots/1', method: 'DELETE'})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+          expect(response.result).to.have.property('message', 'Supplier "123" not found.');
+        });
+    });
+
+    it('returns http 404 when depot does not exist', () => {
+      return specRequest({url: '/suppliers/1/depots/2', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(404));
+    });
+
+    it('returns http 204', () => {
+      return specRequest({url: '/suppliers/1/depots/1', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(204));
+    });
+  });
 });

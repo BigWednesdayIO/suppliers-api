@@ -37,7 +37,7 @@ module.exports = function (options) {
               return reject(new Error(`${method} for route ${route} is undocumented.`));
             }
 
-            const ignoredStatusCodes = [400, 401, 403, 404, 500];
+            const ignoredStatusCodes = [204, 400, 401, 403, 404, 409, 500];
 
             const statusResponse = swaggerMethod.responses[response.statusCode];
 
