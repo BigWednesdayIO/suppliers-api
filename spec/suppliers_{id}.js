@@ -11,7 +11,7 @@ describe('/suppliers/{id}', () => {
     let createResponse;
     let getResponse;
 
-    before(() => {
+    beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
           expect(response.statusCode).to.equal(201);
@@ -39,9 +39,11 @@ describe('/suppliers/{id}', () => {
       const resource = _.clone(createSupplierPayload);
       resource.id = createResponse.result.id;
 
-      expect(getResponse.result).to.have.property('created_at');
+      expect(getResponse.result).to.have.property('_metadata');
+      expect(getResponse.result._metadata).to.have.property('created');
+      expect(getResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-      const result = _.omit(getResponse.result, 'created_at');
+      const result = _.omit(getResponse.result, '_metadata');
       expect(result).to.deep.equal(resource);
     });
   });
@@ -50,8 +52,8 @@ describe('/suppliers/{id}', () => {
     let createResponse;
     const createSupplierPayload = {name: 'A Supplier'};
 
-    before(() => {
-      return specRequest({url: '/suppliers/SUP', method: 'PUT', payload: createSupplierPayload})
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: createSupplierPayload})
         .then(response => {
           createResponse = response;
         });
@@ -70,9 +72,11 @@ describe('/suppliers/{id}', () => {
         const resource = _.clone(createSupplierPayload);
         resource.id = createResponse.result.id;
 
-        expect(createResponse.result).to.have.property('created_at');
+        expect(createResponse.result).to.have.property('_metadata');
+        expect(createResponse.result._metadata).to.have.property('created');
+        expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-        const result = _.omit(createResponse.result, 'created_at');
+        const result = _.omit(createResponse.result, '_metadata');
         expect(result).to.deep.equal(resource);
       });
     });
@@ -81,8 +85,9 @@ describe('/suppliers/{id}', () => {
       let updateResponse;
       const updatedSupplierPayload = {name: 'New name'};
 
-      before(() => {
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload: updatedSupplierPayload})
+      beforeEach(() => {
+        return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'initial name'}})
+          .then(() => specRequest({url: '/suppliers/1', method: 'PUT', payload: updatedSupplierPayload}))
           .then(response => {
             updateResponse = response;
           });
@@ -96,9 +101,11 @@ describe('/suppliers/{id}', () => {
         const resource = _.clone(updatedSupplierPayload);
         resource.id = updateResponse.result.id;
 
-        expect(updateResponse.result).to.have.property('created_at');
+        expect(updateResponse.result).to.have.property('_metadata');
+        expect(updateResponse.result._metadata).to.have.property('created');
+        expect(updateResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-        const result = _.omit(updateResponse.result, 'created_at');
+        const result = _.omit(updateResponse.result, '_metadata');
         expect(result).to.deep.equal(resource);
       });
     });
@@ -137,16 +144,42 @@ describe('/suppliers/{id}', () => {
           });
       });
 
-      it('does not allow created_at', () => {
+      it('does not allow _metadata', () => {
         const payload = _.clone(putSupplierPayload);
-        payload.created_at = new Date();
+        payload._metadata = {created: new Date()};
 
         return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
           .then(response => {
             expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('"created_at" is not allowed');
+            expect(response.result.message).to.equal('"_metadata" is not allowed');
           });
       });
+    });
+  });
+
+  describe('delete', () => {
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
+        .then(() => specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier'}}))
+        .then(() => specRequest({url: '/depots/1', method: 'PUT', payload: {name: 'depot', supplier_id: '2'}}));
+    });
+
+    it('returns http 404 when supplier does not exist', () => {
+      return specRequest({url: '/suppliers/123', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(404));
+    });
+
+    it('returns http 409 when supplier has associated depots', () => {
+      return specRequest({url: '/suppliers/2', method: 'DELETE'})
+        .then(response => {
+          expect(response.statusCode).to.equal(409);
+          expect(response.result.message).to.equal('Supplier "2" has associated depots, which must be deleted first.');
+        });
+    });
+
+    it('returns http 204', () => {
+      return specRequest({url: '/suppliers/1', method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(204));
     });
   });
 });

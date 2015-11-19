@@ -4,6 +4,7 @@
   },
   "rules": {
     "max-nested-callbacks": [1, 8],
-    "no-unused-expressions": 0
+    "no-unused-expressions": 0,
+    "camelcase": 0
   }
 }

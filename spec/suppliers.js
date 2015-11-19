@@ -10,7 +10,7 @@ describe('/suppliers', () => {
   describe('post', () => {
     let createResponse;
 
-    before(() => {
+    beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
           createResponse = response;
@@ -29,9 +29,11 @@ describe('/suppliers', () => {
       const resource = _.clone(createSupplierPayload);
       resource.id = createResponse.result.id;
 
-      expect(createResponse.result).to.have.property('created_at');
+      expect(createResponse.result).to.have.property('_metadata');
+      expect(createResponse.result._metadata).to.have.property('created');
+      expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
-      const result = _.omit(createResponse.result, 'created_at');
+      const result = _.omit(createResponse.result, '_metadata');
       expect(result).to.deep.equal(resource);
     });
 
@@ -57,14 +59,14 @@ describe('/suppliers', () => {
           });
       });
 
-      it('does not allow created_at', () => {
+      it('does not allow _metadata', () => {
         const payload = _.clone(createSupplierPayload);
-        payload.created_at = new Date();
+        payload._metadata = {created: new Date()};
 
         return specRequest({url: '/suppliers', method: 'POST', payload})
           .then(response => {
             expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('"created_at" is not allowed');
+            expect(response.result.message).to.equal('"_metadata" is not allowed');
           });
       });
     });
@@ -77,9 +79,8 @@ describe('/suppliers', () => {
       {name: 'Supplier C'}
     ];
 
-    before(() => {
-      return require('./hooks').deleteTestData()
-        .then(() => specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]}))
+    beforeEach(() => {
+      return specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]})
         .then(() => specRequest({url: '/suppliers/A', method: 'PUT', payload: suppliers[0]}))
         .then(() => specRequest({url: '/suppliers/C', method: 'PUT', payload: suppliers[2]}));
     });
@@ -89,9 +90,13 @@ describe('/suppliers', () => {
         .then(response => {
           expect(response.statusCode).to.equal(200);
 
-          response.result.forEach(s => expect(s).to.have.property('created_at'));
+          response.result.forEach(supplier => {
+            expect(supplier).to.have.property('_metadata');
+            expect(supplier._metadata).to.have.property('created');
+            expect(supplier._metadata.created).to.be.an.instanceOf(Date);
+          });
 
-          const result = response.result.map(s => _.omit(s, 'created_at'));
+          const result = response.result.map(supplier => _.omit(supplier, '_metadata'));
 
           expect(result).to.deep.equal([
             _.assign({id: 'B'}, suppliers[1]),

@@ -5,6 +5,7 @@ module.exports = function (grunt) {
 
   grunt.initConfig({
     app: ['./*.js', './lib/**/*.js'],
+    app_routes: ['./lib/routes/**/*.js'],
     tests: ['./test/**/*.js'],
     specs: ['./spec/**/*.js'],
     eslint: {
@@ -37,7 +38,7 @@ module.exports = function (grunt) {
         tasks: ['lint', 'test']
       },
       specs: {
-        files: ['<%= specs %>'],
+        files: ['<%= specs %>', '<%= app %>', '<%= app_routes %>'],
         tasks: ['lint', 'spec']
       }
     },
