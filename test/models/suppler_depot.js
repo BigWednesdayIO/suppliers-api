@@ -14,7 +14,7 @@ describe('Supplier Depot', () => {
 
   const depotEntities = [
     {key: {path: ['Supplier', 'supplierId', 'Depot', 'D1']}, data: {id: 'D1', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 5000)}},
-    {key: {path: ['Supplier', 'supplierId', 'Depot', 'D2']}, data: {id: 'D2', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}},
+    {key: {path: ['Supplier', 'supplierId', 'Depot', 'D2']}, data: {id: 'D2', name: 'Depot 1', obsolete_property: 1, _metadata_created: new Date().setTime(testDate.getTime() + 1000)}},
     {key: {path: ['Supplier', 'supplierId', 'Depot', 'D3']}, data: {id: 'D3', name: 'Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}},
     {key: {path: ['Supplier', 'supplierId2', 'Depot', 'S2D1']}, data: {id: 'S2D1', name: 'Supplier 2 Depot 1', _metadata_created: new Date().setTime(testDate.getTime())}}
   ];
@@ -172,15 +172,7 @@ describe('Supplier Depot', () => {
     });
 
     describe('as update', () => {
-      let updatedDepot;
       const upsertDepot = {name: 'updated name'};
-
-      before(() => {
-        return SupplierDepot.upsert('supplierId', 'D1', upsertDepot)
-          .then(depot => {
-            updatedDepot = depot;
-          });
-      });
 
       it('updates the persisted depot', () => {
         const persistedData = _.clone(upsertDepot);
@@ -188,15 +180,32 @@ describe('Supplier Depot', () => {
         persistedData._metadata_created = depotEntities[0].data._metadata_created;
         delete persistedData._metadata;
 
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotEntities[0].key, data: persistedData}));
+        return SupplierDepot.upsert('supplierId', 'D1', upsertDepot)
+          .then(() => {
+            sinon.assert.calledWithMatch(saveStub, sinon.match({key: depotEntities[0].key, data: persistedData}));
+          });
       });
 
       it('sets _inserted property', () => {
-        expect(updatedDepot._inserted).to.equal(false);
+        return SupplierDepot.upsert('supplierId', 'D1', upsertDepot)
+          .then(depot => {
+            expect(depot._inserted).to.equal(false);
+          });
       });
 
       it('makes _inserted property non-enumerable', () => {
-        expect(updatedDepot._inserted.propertyIsEnumerable()).to.equal(false);
+        return SupplierDepot.upsert('supplierId', 'D1', upsertDepot)
+          .then(depot => {
+            expect(depot._inserted.propertyIsEnumerable()).to.equal(false);
+          });
+      });
+
+      it('does not keep obsolete properties of the persisted supplier', () => {
+        return SupplierDepot.upsert('supplierId', 'D2', upsertDepot)
+          .then(() => {
+            sinon.assert.calledWithMatch(saveStub, sinon.match(value => !value.data.hasOwnProperty('obsolete_property'),
+              'data without obsolete_property'));
+          });
       });
     });
   });

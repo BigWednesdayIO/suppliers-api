@@ -14,7 +14,7 @@ describe('Supplier', () => {
 
   const supplierEntities = [
     {key: {path: ['Supplier', 'A']}, data: {id: 'A', name: 'Supplier A', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}},
-    {key: {path: ['Supplier', 'B']}, data: {id: 'B', name: 'Supplier B', _metadata_created: new Date().setTime(testDate.getTime())}},
+    {key: {path: ['Supplier', 'B']}, data: {id: 'B', name: 'Supplier B', obsolete_property: 1, _metadata_created: new Date().setTime(testDate.getTime())}},
     {key: {path: ['Supplier', 'C']}, data: {id: 'C', name: 'Supplier C', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}}
   ];
 
@@ -166,15 +166,7 @@ describe('Supplier', () => {
     });
 
     describe('as update', () => {
-      let updatedSupplier;
       const upsertSupplier = {name: 'updated name'};
-
-      before(() => {
-        return Supplier.upsert('A', upsertSupplier)
-          .then(supplier => {
-            updatedSupplier = supplier;
-          });
-      });
 
       it('updates the persisted supplier', () => {
         const persistedData = _.clone(upsertSupplier);
@@ -182,15 +174,32 @@ describe('Supplier', () => {
         persistedData._metadata_created = supplierEntities[0].data._metadata_created;
         delete persistedData._metadata;
 
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: supplierEntities[0].key, data: persistedData}));
+        return Supplier.upsert('A', upsertSupplier)
+          .then(() => {
+            sinon.assert.calledWithMatch(saveStub, sinon.match({key: supplierEntities[0].key, data: persistedData}));
+          });
       });
 
       it('sets _inserted property', () => {
-        expect(updatedSupplier._inserted).to.equal(false);
+        return Supplier.upsert('A', upsertSupplier)
+          .then(supplier => {
+            expect(supplier._inserted).to.equal(false);
+          });
       });
 
       it('makes _inserted property non-enumerable', () => {
-        expect(updatedSupplier._inserted.propertyIsEnumerable()).to.equal(false);
+        return Supplier.upsert('A', upsertSupplier)
+          .then(supplier => {
+            expect(supplier._inserted.propertyIsEnumerable()).to.equal(false);
+          });
+      });
+
+      it('does not keep obsolete properties of the persisted supplier', () => {
+        return Supplier.upsert('B', upsertSupplier)
+          .then(() => {
+            sinon.assert.calledWithMatch(saveStub,
+              sinon.match(value => !value.data.hasOwnProperty('obsolete_property'), 'data without obsolete_property'));
+          });
       });
     });
   });
