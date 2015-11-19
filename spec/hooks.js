@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const dataset = require('../lib/dataset');
+const dataset = require('../lib/models/dataset');
 
 module.exports.deleteTestData = kind => {
   const query = dataset.createQuery(kind);
