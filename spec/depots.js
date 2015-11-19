@@ -21,7 +21,7 @@ describe('/depots', () => {
       return specRequest({url: '/depots', method: 'POST', payload: {name: 'Depot 1', supplier_id: '123'}})
         .then(response => {
           expect(response.statusCode).to.equal(400);
-          expect(response.result).to.have.property('message', 'child "supplier_id" fails because ["supplier_id" must be one of [1]]');
+          expect(response.result).to.have.property('message', 'child "supplier_id" fails because ["supplier_id" is not a known id]');
         });
     });
 
