@@ -1576,6 +1576,11 @@
         }
       }
     },
+    "hapi-version-route": {
+      "version": "1.0.0",
+      "from": "hapi-version-route@*",
+      "resolved": "https://registry.npmjs.org/hapi-version-route/-/hapi-version-route-1.0.0.tgz"
+    },
     "har-validator": {
       "version": "2.0.2",
       "from": "har-validator@>=2.0.2 <2.1.0",

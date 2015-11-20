@@ -8,4 +8,4 @@ EXPOSE 8080
 
 WORKDIR /src
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
