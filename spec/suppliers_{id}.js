@@ -2,7 +2,9 @@
 
 const _ = require('lodash');
 const expect = require('chai').expect;
+
 const specRequest = require('./spec_request');
+const depotParameters = require('./parameters/depot');
 
 describe('/suppliers/{id}', () => {
   const createSupplierPayload = {name: 'A Supplier'};
@@ -161,7 +163,7 @@ describe('/suppliers/{id}', () => {
     beforeEach(() => {
       return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
         .then(() => specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier'}}))
-        .then(() => specRequest({url: '/suppliers/2/depots/1', method: 'PUT', payload: {name: 'depot'}}));
+        .then(() => specRequest({url: '/suppliers/2/depots/1', method: 'PUT', payload: depotParameters()}));
     });
 
     it('returns http 404 when supplier does not exist', () => {

@@ -111,6 +111,66 @@ describe('/suppliers/{id}/depots/{id}', () => {
           });
       });
 
+      it('requires delivery_outward_codes', () => {
+        const payload = _.omit(depotParameters(), 'delivery_outward_codes');
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" is required]');
+          });
+      });
+
+      it('requires delivery_outward_codes to be an array', () => {
+        const payload = _.assign({}, depotParameters(), {delivery_outward_codes: 1});
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" must be an array]');
+          });
+      });
+
+      it('requires delivery_outward_codes items to be strings', () => {
+        const payload = _.assign({}, depotParameters(), {delivery_outward_codes: [1]});
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" at position 0 fails because ["0" must be a string]]');
+          });
+      });
+
+      it('requires delivery_postcode_areas', () => {
+        const payload = _.omit(depotParameters(), 'delivery_postcode_areas');
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" is required]');
+          });
+      });
+
+      it('requires delivery_postcode_areas to be an array', () => {
+        const payload = _.assign({}, depotParameters(), {delivery_postcode_areas: 1});
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" must be an array]');
+          });
+      });
+
+      it('requires delivery_postcode_areas items to be strings', () => {
+        const payload = _.assign({}, depotParameters(), {delivery_postcode_areas: [1]});
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" at position 0 fails because ["0" must be a string]]');
+          });
+      });
+
       it('does not allow _metadata', () => {
         const payload = _.assign({_metadata: {created: new Date()}}, depotParameters());
 
