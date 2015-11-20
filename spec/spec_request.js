@@ -1,5 +1,7 @@
 'use strict';
 
+const _ = require('lodash');
+
 module.exports = function (options) {
   return new Promise((resolve, reject) => {
     require('../lib/server')((err, server) => {
@@ -33,6 +35,18 @@ module.exports = function (options) {
 
             if (!swaggerMethod) {
               return reject(new Error(`${method} for route ${route} is undocumented.`));
+            }
+
+            const ignoredStatusCodes = [204, 400, 401, 403, 404, 409, 500];
+
+            const statusResponse = swaggerMethod.responses[response.statusCode];
+
+            if (!_.includes(ignoredStatusCodes, response.statusCode) && !statusResponse) {
+              return reject(new Error(`${response.statusCode} response for route ${route} is undocumented.`));
+            }
+
+            if (statusResponse && statusResponse.description.length === 0) {
+              return reject(new Error(`${response.statusCode} response for route ${route} is missing description.`));
             }
 
             resolve(response);

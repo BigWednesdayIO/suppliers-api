@@ -9,17 +9,14 @@ describe('Supplier', () => {
   let Supplier;
   let sandbox;
   let saveStub;
-  let keyStub;
+  let deleteStub;
   const testDate = new Date();
 
-  const persistedSuppliers = [
-    {id: 'A', name: 'Supplier A', created_at: new Date().setTime(testDate.getTime() + 2000)},
-    {id: 'B', name: 'Supplier B', created_at: new Date().setTime(testDate.getTime())},
-    {id: 'C', name: 'Supplier C', created_at: new Date().setTime(testDate.getTime() + 1000)}
+  const supplierEntities = [
+    {key: {path: ['Supplier', 'A']}, data: {id: 'A', name: 'Supplier A', _metadata_created: new Date().setTime(testDate.getTime() + 2000)}},
+    {key: {path: ['Supplier', 'B']}, data: {id: 'B', name: 'Supplier B', obsolete_property: 1, _metadata_created: new Date().setTime(testDate.getTime())}},
+    {key: {path: ['Supplier', 'C']}, data: {id: 'C', name: 'Supplier C', _metadata_created: new Date().setTime(testDate.getTime() + 1000)}}
   ];
-
-  const newKey = {key: 'new'};
-  const existingKey = {key: 'existing'};
 
   before(() => {
     sandbox = sinon.sandbox.create();
@@ -27,15 +24,10 @@ describe('Supplier', () => {
     sandbox.useFakeTimers(testDate.getTime());
 
     sandbox.stub(dataset, 'createQuery', kind => {
-      if (kind !== 'Supplier') {
-        return undefined;
-      }
-
       return {
-        filteredId: undefined,
-        sortOrder: undefined,
-        filter(_, id) {
-          this.filteredId = id;
+        kind,
+        hasAncestor(key) {
+          this.ancestorKey = key;
           return this;
         },
         order(order) {
@@ -46,32 +38,34 @@ describe('Supplier', () => {
     });
 
     sandbox.stub(dataset, 'runQuery', (query, callback) => {
-      if (query.filteredId) {
-        const supplier = _.find(persistedSuppliers, {id: query.filteredId});
-
-        if (supplier) {
-          return callback(null, [{key: existingKey, data: supplier}]);
-        }
-
+      if (query.kind !== 'Supplier') {
         return callback(null, []);
       }
 
-      let data = persistedSuppliers;
+      let data = supplierEntities;
 
-      if (query.sortOrder === 'created_at') {
-        data = _.sortBy(persistedSuppliers, 'created_at');
+      if (query.sortOrder === '_metadata_created') {
+        data = _.sortBy(data, entity => entity.data._metadata_created);
       }
 
-      callback(null, data.map(supplier => {
-        return {key: existingKey, data: supplier};
+      callback(null, data.map(entity => {
+        return {key: entity.key, data: entity.data};
       }));
     });
 
-    keyStub = sandbox.stub(dataset, 'key', () => {
-      return newKey;
+    sandbox.stub(dataset, 'get', (key, callback) => {
+      callback(null, _.find(supplierEntities, {key}));
+    });
+
+    sandbox.stub(dataset, 'key', path => {
+      return {path};
     });
 
     saveStub = sandbox.stub(dataset, 'save', (args, callback) => {
+      callback();
+    });
+
+    deleteStub = sandbox.stub(dataset, 'delete', (key, callback) => {
       callback();
     });
 
@@ -83,11 +77,11 @@ describe('Supplier', () => {
   });
 
   describe('create', () => {
-    const newSupplier = {name: 'a supplier'};
+    const attributes = {name: 'a supplier'};
     let createdSupplier;
 
     before(() => {
-      return Supplier.create(newSupplier)
+      return Supplier.create(attributes)
         .then(supplier => {
           createdSupplier = supplier;
         });
@@ -98,11 +92,17 @@ describe('Supplier', () => {
     });
 
     it('sets created date', () => {
-      expect(createdSupplier.created_at).to.deep.equal(testDate);
+      expect(createdSupplier._metadata.created).to.deep.equal(testDate);
     });
 
     it('persists the supplier', () => {
-      sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: createdSupplier}));
+      const persistedData = _.clone(createdSupplier);
+      persistedData._metadata_created = persistedData._metadata.created;
+      delete persistedData._metadata;
+
+      const key = {path: ['Supplier', persistedData.id]};
+
+      sinon.assert.calledWithMatch(saveStub, sinon.match({key, data: persistedData}));
     });
   });
 
@@ -110,7 +110,10 @@ describe('Supplier', () => {
     it('retrieves the supplier by id', () => {
       return Supplier.get('A')
         .then(supplier => {
-          expect(supplier).to.equal(persistedSuppliers[0]);
+          supplier._metadata_created = supplier._metadata.created;
+          delete supplier._metadata;
+
+          expect(supplier).to.deep.equal(supplierEntities[0].data);
         });
     });
 
@@ -140,12 +143,17 @@ describe('Supplier', () => {
       });
 
       it('sets created date', () => {
-        expect(createdSupplier.created_at).to.deep.equal(testDate);
+        expect(createdSupplier._metadata.created).to.deep.equal(testDate);
       });
 
       it('persists the supplier', () => {
-        sinon.assert.calledWith(keyStub, 'Supplier');
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: newKey, method: 'insert_auto_id', data: createdSupplier}));
+        const persistedData = _.clone(createdSupplier);
+        persistedData._metadata_created = persistedData._metadata.created;
+        delete persistedData._metadata;
+
+        const key = {path: ['Supplier', persistedData.id]};
+
+        sinon.assert.calledWithMatch(saveStub, sinon.match({key, data: persistedData}));
       });
 
       it('sets _inserted property', () => {
@@ -158,29 +166,40 @@ describe('Supplier', () => {
     });
 
     describe('as update', () => {
-      let updatedSupplier;
       const upsertSupplier = {name: 'updated name'};
 
-      before(() => {
+      it('updates the persisted supplier', () => {
+        const persistedData = _.clone(upsertSupplier);
+        persistedData.id = 'A';
+        persistedData._metadata_created = supplierEntities[0].data._metadata_created;
+        delete persistedData._metadata;
+
         return Supplier.upsert('A', upsertSupplier)
-          .then(supplier => {
-            updatedSupplier = supplier;
+          .then(() => {
+            sinon.assert.calledWithMatch(saveStub, sinon.match({key: supplierEntities[0].key, data: persistedData}));
           });
       });
 
-      it('updates an existing supplier', () => {
-        const persistedData = upsertSupplier;
-        persistedData.created_at = persistedSuppliers[0].created_at;
-
-        sinon.assert.calledWithMatch(saveStub, sinon.match({key: existingKey, method: 'update', data: persistedData}));
-      });
-
       it('sets _inserted property', () => {
-        expect(updatedSupplier._inserted).to.equal(false);
+        return Supplier.upsert('A', upsertSupplier)
+          .then(supplier => {
+            expect(supplier._inserted).to.equal(false);
+          });
       });
 
       it('makes _inserted property non-enumerable', () => {
-        expect(updatedSupplier._inserted.propertyIsEnumerable()).to.equal(false);
+        return Supplier.upsert('A', upsertSupplier)
+          .then(supplier => {
+            expect(supplier._inserted.propertyIsEnumerable()).to.equal(false);
+          });
+      });
+
+      it('does not keep obsolete properties of the persisted supplier', () => {
+        return Supplier.upsert('B', upsertSupplier)
+          .then(() => {
+            sinon.assert.calledWithMatch(saveStub,
+              sinon.match(value => !value.data.hasOwnProperty('obsolete_property'), 'data without obsolete_property'));
+          });
       });
     });
   });
@@ -195,14 +214,25 @@ describe('Supplier', () => {
     });
 
     it('returns all suppliers', () => {
-      persistedSuppliers.forEach(supplier => {
-        const expectedSupplier = _.find(foundSuppliers, {id: supplier.id});
+      supplierEntities.forEach(entity => {
+        const expectedSupplier = _.find(foundSuppliers, {id: entity.data.id});
         expect(expectedSupplier).to.exist;
       });
     });
 
     it('returns suppliers sorted by default field created_at', () => {
       expect(_.map(foundSuppliers, 'id')).to.deep.equal(['B', 'C', 'A']);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletes the persisted supplier', () => {
+      const key = {path: ['Supplier', '1']};
+
+      return Supplier.delete('1')
+        .then(() => {
+          sinon.assert.calledWith(deleteStub, key);
+        });
     });
   });
 });
