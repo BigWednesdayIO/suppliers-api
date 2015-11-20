@@ -2,11 +2,13 @@
 
 const _ = require('lodash');
 const expect = require('chai').expect;
+
 const specRequest = require('./spec_request');
+const depotParameters = require('./parameters/depot');
 
 describe('/suppliers/{id}/depots', () => {
   describe('post', () => {
-    const createPayload = {name: 'A depot'};
+    const createPayload = depotParameters();
     let createResponse;
 
     beforeEach(() => {
@@ -18,7 +20,7 @@ describe('/suppliers/{id}/depots', () => {
     });
 
     it('returns http 404 for a non existant supplier', () => {
-      return specRequest({url: '/suppliers/123/depots', method: 'POST', payload: {name: 'Depot 1'}})
+      return specRequest({url: '/suppliers/123/depots', method: 'POST', payload: createPayload})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "123" not found.');
@@ -34,14 +36,13 @@ describe('/suppliers/{id}/depots', () => {
     });
 
     it('returns the created resource', () => {
-      const resource = _.clone(createPayload);
-      resource.id = createResponse.result.id;
-
       expect(createResponse.result).to.have.property('_metadata');
       expect(createResponse.result._metadata).to.have.property('created');
       expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
 
       const result = _.omit(createResponse.result, '_metadata');
+      const resource = _.assign({id: createResponse.result.id}, createPayload);
+
       expect(result).to.deep.equal(resource);
     });
 
@@ -82,9 +83,9 @@ describe('/suppliers/{id}/depots', () => {
 
   describe('get', () => {
     const depots = [
-      {name: 'Depot 1'},
-      {name: 'Depot 2'},
-      {name: 'Depot 3'}
+      _.assign(depotParameters(), {name: 'Depot 1'}),
+      _.assign(depotParameters(), {name: 'Depot 2'}),
+      _.assign(depotParameters(), {name: 'Depot 3'})
     ];
 
     beforeEach(() => {
@@ -93,7 +94,7 @@ describe('/suppliers/{id}/depots', () => {
         .then(() => specRequest({url: '/suppliers/1/depots/3', method: 'PUT', payload: depots[2]}))
         .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depots[0]}))
         .then(() => specRequest({url: '/suppliers/1/depots/2', method: 'PUT', payload: depots[1]}))
-        .then(() => specRequest({url: '/suppliers/2/depots/1', method: 'PUT', payload: {name: 'Supplier 2, Depot 1'}}));
+        .then(() => specRequest({url: '/suppliers/2/depots/1', method: 'PUT', payload: _.assign(depotParameters(), {name: 'Supplier 2 depot'})}));
     });
 
     it('returns http 404 for a non existant supplier', () => {
@@ -129,7 +130,7 @@ describe('/suppliers/{id}/depots', () => {
   describe('delete', () => {
     beforeEach(() => {
       return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
-        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: {name: 'depot'}}));
+        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depotParameters()}));
     });
 
     it('returns http 404 when supplier does not exist', () => {

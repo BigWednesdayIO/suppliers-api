@@ -2,12 +2,14 @@
 
 const _ = require('lodash');
 const expect = require('chai').expect;
+
 const specRequest = require('./spec_request');
+const depotParameters = require('./parameters/depot');
 
 describe('/suppliers/{id}/depots/{id}', () => {
   describe('put', () => {
     it('returns http 404 when supplier does not exist', () => {
-      return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: {name: 'test'}})
+      return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: depotParameters()})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "123" not found.');
@@ -16,7 +18,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
 
     describe('as create', () => {
       let createResponse;
-      const createPayload = {name: 'A Depot'};
+      const createPayload = depotParameters();
 
       beforeEach(() => {
         return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
@@ -49,11 +51,11 @@ describe('/suppliers/{id}/depots/{id}', () => {
 
     describe('as update', () => {
       let updateResponse;
-      const updatePayload = {name: 'A new name'};
+      const updatePayload = _.assign(depotParameters(), {name: 'A new name'});
 
       beforeEach(() => {
         return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
-          .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: {name: 'a depot'}}))
+          .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depotParameters()}))
           .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: updatePayload}))
           .then(response => {
             updateResponse = response;
@@ -78,10 +80,8 @@ describe('/suppliers/{id}/depots/{id}', () => {
     });
 
     describe('validation', () => {
-      const putDepotPayload = {name: 'name'};
-
       it('rejects id', () => {
-        const payload = _.assign({id: '1'}, putDepotPayload);
+        const payload = _.assign({id: '1'}, depotParameters());
 
         return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
           .then(response => {
@@ -91,7 +91,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
       });
 
       it('requires name', () => {
-        const payload = _.omit(putDepotPayload, 'name');
+        const payload = _.omit(depotParameters(), 'name');
 
         return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
           .then(response => {
@@ -101,7 +101,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
       });
 
       it('requires name to be a string', () => {
-        const payload = _.omit(putDepotPayload, 'name');
+        const payload = _.omit(depotParameters(), 'name');
         payload.name = 123;
 
         return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
@@ -112,8 +112,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
       });
 
       it('does not allow _metadata', () => {
-        const payload = _.clone(putDepotPayload);
-        payload._metadata = {created: new Date()};
+        const payload = _.assign({_metadata: {created: new Date()}}, depotParameters());
 
         return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
           .then(response => {
@@ -126,7 +125,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
 
   describe('get', () => {
     let getResponse;
-    const depot = {name: 'a depot'};
+    const depot = depotParameters();
 
     beforeEach(() => {
       return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
@@ -172,7 +171,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
   describe('delete', () => {
     beforeEach(() => {
       return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
-        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: {name: 'depot'}}));
+        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depotParameters()}));
     });
 
     it('returns http 404 when supplier does not exist', () => {
