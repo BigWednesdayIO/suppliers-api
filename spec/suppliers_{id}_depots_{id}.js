@@ -141,6 +141,16 @@ describe('/suppliers/{id}/depots/{id}', () => {
           });
       });
 
+      it('requires delivery_outward_codes items to be in the correct format', () => {
+        const payload = _.assign({}, depotParameters(), {delivery_outward_codes: ['1']});
+
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" at position 0 fails because ["0" with value "1" fails to match the outward code pattern]]');
+          });
+      });
+
       it('requires delivery_postcode_areas', () => {
         const payload = _.omit(depotParameters(), 'delivery_postcode_areas');
 
