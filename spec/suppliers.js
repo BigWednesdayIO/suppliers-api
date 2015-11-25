@@ -105,5 +105,24 @@ describe('/suppliers', () => {
           ]);
         });
     });
+
+    describe('with delivery to postcode', () => {
+      before(() => {
+        return specRequest({url: '/suppliers/A/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
+          .then(() => specRequest({url: '/suppliers/B/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
+      });
+
+      it('filters out suppliers that do not deliver to the postcode', () => {
+        return Promise.all([
+          specRequest({url: '/suppliers?deliver_to=ec2y9ar', method: 'GET'}),
+          specRequest({url: '/suppliers?deliver_to=se228ly', method: 'GET'})
+        ])
+        .then(responses => {
+          console.log(_.map(responses, 'result'));
+          expect(responses[0].result).to.deep.equal([suppliers[1]]);
+          expect(responses[1].result).to.deep.equal([suppliers[1], suppliers[0]]);
+        });
+      });
+    });
   });
 });
