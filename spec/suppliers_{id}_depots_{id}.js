@@ -90,7 +90,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
           });
       });
 
-      const requiredFields = ['name', 'delivery_outward_codes', 'delivery_postcode_areas'];
+      const requiredFields = ['name', 'delivery_countries', 'delivery_regions', 'delivery_counties', 'delivery_districts', 'delivery_places'];
 
       requiredFields.forEach(field => {
         it(`requires ${field}`, () => {
@@ -115,7 +115,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
           });
       });
 
-      const stringArrayFields = ['delivery_outward_codes', 'delivery_postcode_areas'];
+      const stringArrayFields = ['delivery_countries', 'delivery_regions', 'delivery_counties', 'delivery_districts', 'delivery_places'];
 
       stringArrayFields.forEach(field => {
         it(`requires ${field} to be an array`, () => {
@@ -137,26 +137,6 @@ describe('/suppliers/{id}/depots/{id}', () => {
               expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" at position 0 fails because ["0" must be a string]]`);
             });
         });
-      });
-
-      it('requires delivery_outward_codes items to be in the correct format', () => {
-        const payload = _.assign({}, depotParameters(), {delivery_outward_codes: ['1']});
-
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" at position 0 fails because ["0" with value "1" fails to match the outward code pattern]]');
-          });
-      });
-
-      it('requires delivery_postcode_areas items to be in the correct format', () => {
-        const payload = _.assign({}, depotParameters(), {delivery_postcode_areas: ['1']});
-
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" at position 0 fails because ["0" with value "1" fails to match the postcode area pattern]]');
-          });
       });
 
       it('does not allow _metadata', () => {
