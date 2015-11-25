@@ -90,14 +90,18 @@ describe('/suppliers/{id}/depots/{id}', () => {
           });
       });
 
-      it('requires name', () => {
-        const payload = _.omit(depotParameters(), 'name');
+      const requiredFields = ['name', 'delivery_outward_codes', 'delivery_postcode_areas'];
 
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "name" fails because ["name" is required]');
-          });
+      requiredFields.forEach(field => {
+        it(`requires ${field}`, () => {
+          const payload = _.omit(depotParameters(), field);
+
+          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" is required]`);
+            });
+        });
       });
 
       it('requires name to be a string', () => {
@@ -111,34 +115,28 @@ describe('/suppliers/{id}/depots/{id}', () => {
           });
       });
 
-      it('requires delivery_outward_codes', () => {
-        const payload = _.omit(depotParameters(), 'delivery_outward_codes');
+      const stringArrayFields = ['delivery_outward_codes', 'delivery_postcode_areas'];
 
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" is required]');
-          });
-      });
+      stringArrayFields.forEach(field => {
+        it(`requires ${field} to be an array`, () => {
+          const payload = _.assign({}, depotParameters(), {[field]: 1});
 
-      it('requires delivery_outward_codes to be an array', () => {
-        const payload = _.assign({}, depotParameters(), {delivery_outward_codes: 1});
+          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" must be an array]`);
+            });
+        });
 
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" must be an array]');
-          });
-      });
+        it(`requires ${field} items to be strings`, () => {
+          const payload = _.assign({}, depotParameters(), {[field]: [1]});
 
-      it('requires delivery_outward_codes items to be strings', () => {
-        const payload = _.assign({}, depotParameters(), {delivery_outward_codes: [1]});
-
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" at position 0 fails because ["0" must be a string]]');
-          });
+          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" at position 0 fails because ["0" must be a string]]`);
+            });
+        });
       });
 
       it('requires delivery_outward_codes items to be in the correct format', () => {
@@ -148,36 +146,6 @@ describe('/suppliers/{id}/depots/{id}', () => {
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "delivery_outward_codes" fails because ["delivery_outward_codes" at position 0 fails because ["0" with value "1" fails to match the outward code pattern]]');
-          });
-      });
-
-      it('requires delivery_postcode_areas', () => {
-        const payload = _.omit(depotParameters(), 'delivery_postcode_areas');
-
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" is required]');
-          });
-      });
-
-      it('requires delivery_postcode_areas to be an array', () => {
-        const payload = _.assign({}, depotParameters(), {delivery_postcode_areas: 1});
-
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" must be an array]');
-          });
-      });
-
-      it('requires delivery_postcode_areas items to be strings', () => {
-        const payload = _.assign({}, depotParameters(), {delivery_postcode_areas: [1]});
-
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
-          .then(response => {
-            expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "delivery_postcode_areas" fails because ["delivery_postcode_areas" at position 0 fails because ["0" must be a string]]');
           });
       });
 
