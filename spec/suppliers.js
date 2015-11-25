@@ -107,7 +107,7 @@ describe('/suppliers', () => {
     });
 
     describe('with delivery to postcode', () => {
-      before(() => {
+      beforeEach(() => {
         return specRequest({url: '/suppliers/A/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
           .then(() => specRequest({url: '/suppliers/B/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
       });
@@ -118,9 +118,17 @@ describe('/suppliers', () => {
           specRequest({url: '/suppliers?deliver_to=se228ly', method: 'GET'})
         ])
         .then(responses => {
-          console.log(_.map(responses, 'result'));
-          expect(responses[0].result).to.deep.equal([suppliers[1]]);
-          expect(responses[1].result).to.deep.equal([suppliers[1], suppliers[0]]);
+          responses.forEach(response => response.result.forEach(supplier => {
+            expect(supplier).to.have.property('_metadata');
+            expect(supplier._metadata).to.have.property('created');
+            expect(supplier._metadata.created).to.be.an.instanceOf(Date);
+          }));
+
+          const result1 = responses[0].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
+          expect(result1).to.deep.equal([suppliers[1]]);
+
+          const result2 = responses[1].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
+          expect(result2).to.deep.equal([suppliers[1], suppliers[0]]);
         });
       });
     });
