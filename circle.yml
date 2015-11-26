@@ -4,10 +4,20 @@ machine:
   python:
     version: 2.7.3
 
+checkout:
+  post:
+    - git submodule update --init
+
 dependencies:
   cache_directories:
     - '~/docker'
+    - ~/google-cloud-sdk
   override:
+    - gcloud_scripts/install_deployment_tools.sh
+    - echo $GCLOUD_KEY | base64 --decode > gcloud.p12
+    - ~/google-cloud-sdk/bin/gcloud auth activate-service-account $GCLOUD_EMAIL --key-file gcloud.p12
+    - ssh-keygen -f ~/.ssh/google_compute_engine -N ""
+    - ~/google-cloud-sdk/bin/gcloud container clusters get-credentials $GCLOUD_CLUSTER
     - sudo pip install -U docker-compose
     - if [[ -e ~/docker/node.tar ]]; then docker load -i ~/docker/node.tar; fi
     - if [[ -e ~/docker/gcd.tar ]]; then docker load -i ~/docker/gcd.tar; fi
