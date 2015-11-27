@@ -3,7 +3,6 @@
 const _ = require('lodash');
 const expect = require('chai').expect;
 const sinon = require('sinon');
-const nock = require('nock');
 
 const dataset = require('../../../lib/models/dataset');
 
@@ -26,38 +25,11 @@ const depotEntities = [
 ];
 
 describe('Supplier', () => {
-  describe('findByDeliveryPostcode', () => {
+  describe('findByDeliveryLocations', () => {
     let runQueryStub;
     let getStub;
 
     beforeEach(() => {
-      nock(`http://${process.env.POSTCODES_API_SVC_HOST}:${process.env.POSTCODES_API_SVC_PORT}`)
-        .get('/postcodes/scottishpostcode')
-        .reply(200, {
-          postcode: 'scottishpostcode',
-          country: 'Scotland'
-        })
-        .get('/postcodes/eastmidlandspostcode')
-        .reply(200, {
-          postcode: 'eastmidlandspostcode',
-          region: 'East Midlands'
-        })
-        .get('/postcodes/cambspostcode')
-        .reply(200, {
-          postcode: 'cambspostcode',
-          county: 'Cambridgeshire'
-        })
-        .get('/postcodes/brentpostcode')
-        .reply(200, {
-          postcode: 'brentpostcode',
-          region: 'Brent'
-        })
-        .get('/postcodes/aberdeenpostcode')
-        .reply(200, {
-          postcode: 'aberdeenpostcode',
-          place: 'Aberdeen'
-        });
-
       runQueryStub = sinon.stub(dataset, 'runQuery', (query, callback) => {
         if (query.kinds[0] !== 'Depot') {
           throw new Error(`Expected depot query. Got ${query}`);
@@ -78,48 +50,47 @@ describe('Supplier', () => {
     });
 
     afterEach(() => {
-      nock.cleanAll();
       runQueryStub.restore();
       getStub.restore();
     });
 
     it('returns suppliers with depots delivering to the postcode country', () => {
-      return Supplier.findByDeliveryPostcode('scottishpostcode')
+      return Supplier.findByDeliveryLocations({country: 'Scotland'})
         .then(suppliers => {
           expect(_.find(suppliers, {id: 'scotlandsupplier'})).to.exist;
         });
     });
 
     it('returns suppliers with depots delivering to the postcode region', () => {
-      return Supplier.findByDeliveryPostcode('eastmidlandspostcode')
+      return Supplier.findByDeliveryLocations({region: 'East Midlands'})
         .then(suppliers => {
           expect(_.find(suppliers, {id: 'eastmidlandssupplier'})).to.exist;
         });
     });
 
     it('returns suppliers with depots delivering to the postcode county', () => {
-      return Supplier.findByDeliveryPostcode('cambspostcode')
+      return Supplier.findByDeliveryLocations({county: 'Cambridgeshire'})
         .then(suppliers => {
           expect(_.find(suppliers, {id: 'cambssupplier'})).to.exist;
         });
     });
 
     it('returns suppliers with depots delivering to the postcode district', () => {
-      return Supplier.findByDeliveryPostcode('brentpostcode')
+      return Supplier.findByDeliveryLocations({region: 'Brent'})
         .then(suppliers => {
           expect(_.find(suppliers, {id: 'brentsupplier'})).to.exist;
         });
     });
 
     it('returns suppliers with depots delivering to the postcode place', () => {
-      return Supplier.findByDeliveryPostcode('aberdeenpostcode')
+      return Supplier.findByDeliveryLocations({place: 'Aberdeen'})
         .then(suppliers => {
           expect(_.find(suppliers, {id: 'aberdeensupplier'})).to.exist;
         });
     });
 
     it('does not return suppliers that do not deliver to the postcode', () => {
-      return Supplier.findByDeliveryPostcode('aberdeenpostcode')
+      return Supplier.findByDeliveryLocations({place: 'Aberdeen'})
         .then(suppliers => {
           expect(_.find(suppliers, {id: 'brentsupplier'})).to.not.exist;
         });
