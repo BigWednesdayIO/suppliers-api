@@ -131,6 +131,22 @@ describe('/suppliers', () => {
           expect(result2).to.deep.equal([suppliers[1], suppliers[0]]);
         });
       });
+
+      it('returns http 400 when not a valid postcode format', () => {
+        return specRequest({url: '/suppliers?deliver_to=111', method: 'get'})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "deliver_to" fails because ["deliver_to" with value "111" fails to match the postcode pattern]');
+          });
+      });
+
+      it('returns http 400 when the postcode is not a real postcode', () => {
+        return specRequest({url: '/suppliers?deliver_to=ab113de', method: 'get'})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "deliver_to" fails because ["deliver_to" with value "ab113de" is not a known postcode]');
+          });
+      });
     });
   });
 });
