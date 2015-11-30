@@ -105,5 +105,52 @@ describe('/suppliers', () => {
           ]);
         });
     });
+
+    describe('with delivery to postcode', () => {
+      beforeEach(() => {
+        return specRequest({url: '/suppliers/A/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
+          .then(() => specRequest({url: '/suppliers/B/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
+      });
+
+      it('filters out suppliers that do not deliver to the postcode', () => {
+        return Promise.all([
+          specRequest({url: '/suppliers?deliver_to=ec2y9ar', method: 'GET'}),
+          specRequest({url: '/suppliers?deliver_to=se228ly', method: 'GET'})
+        ])
+        .then(responses => {
+          responses.forEach(response => response.result.forEach(supplier => {
+            expect(supplier).to.have.property('_metadata');
+            expect(supplier._metadata).to.have.property('created');
+            expect(supplier._metadata.created).to.be.an.instanceOf(Date);
+          }));
+
+          const result1 = responses[0].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
+          expect(result1).to.deep.equal([suppliers[1]]);
+
+          const result2 = responses[1].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
+          expect(result2).to.deep.equal([suppliers[1], suppliers[0]]);
+        });
+      });
+
+      it('returns http 400 when not a valid postcode format', () => {
+        const invalidPostcodes = ['111', 'fooEC29ARbar'];
+
+        return Promise.all(invalidPostcodes.map(postcode => specRequest({url: `/suppliers?deliver_to=${postcode}`, method: 'get'})))
+        .then(responses => {
+          responses.forEach(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.match(/^child "deliver_to" fails because \["deliver_to" with value ".*" fails to match the postcode pattern\]$/);
+          });
+        });
+      });
+
+      it('returns http 400 when the postcode is not a real postcode', () => {
+        return specRequest({url: '/suppliers?deliver_to=ab113de', method: 'get'})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "deliver_to" fails because ["deliver_to" with value "ab113de" is not a known postcode]');
+          });
+      });
+    });
   });
 });

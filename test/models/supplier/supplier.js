@@ -3,7 +3,7 @@
 const _ = require('lodash');
 const expect = require('chai').expect;
 const sinon = require('sinon');
-const dataset = require('../../lib/models/dataset');
+const dataset = require('../../../lib/models/dataset');
 
 describe('Supplier', () => {
   let Supplier;
@@ -69,7 +69,7 @@ describe('Supplier', () => {
       callback();
     });
 
-    Supplier = require('../../lib/models/supplier');
+    Supplier = require('../../../lib/models/supplier');
   });
 
   after(() => {
