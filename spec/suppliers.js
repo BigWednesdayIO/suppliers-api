@@ -133,11 +133,15 @@ describe('/suppliers', () => {
       });
 
       it('returns http 400 when not a valid postcode format', () => {
-        return specRequest({url: '/suppliers?deliver_to=111', method: 'get'})
-          .then(response => {
+        const invalidPostcodes = ['111', 'fooEC29ARbar'];
+
+        return Promise.all(invalidPostcodes.map(postcode => specRequest({url: `/suppliers?deliver_to=${postcode}`, method: 'get'})))
+        .then(responses => {
+          responses.forEach(response => {
             expect(response.statusCode).to.equal(400);
-            expect(response.result.message).to.equal('child "deliver_to" fails because ["deliver_to" with value "111" fails to match the postcode pattern]');
+            expect(response.result.message).to.match(/^child "deliver_to" fails because \["deliver_to" with value ".*" fails to match the postcode pattern\]$/);
           });
+        });
       });
 
       it('returns http 400 when the postcode is not a real postcode', () => {
