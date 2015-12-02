@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const bluebird = require('bluebird');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
@@ -78,38 +79,27 @@ describe('/suppliers', () => {
       {name: 'Supplier B'},
       {name: 'Supplier C'}
     ];
+    let createdSuppliers;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers/B', method: 'PUT', payload: suppliers[1]})
-        .then(() => specRequest({url: '/suppliers/A', method: 'PUT', payload: suppliers[0]}))
-        .then(() => specRequest({url: '/suppliers/C', method: 'PUT', payload: suppliers[2]}));
+      return bluebird.mapSeries([1, 0, 2], i => specRequest({url: '/suppliers', method: 'POST', payload: suppliers[i]}))
+        .then(responses => {
+          createdSuppliers = responses.map(r => r.result);
+        });
     });
 
     it('returns all suppliers', () => {
       return specRequest({url: '/suppliers', method: 'GET'})
         .then(response => {
           expect(response.statusCode).to.equal(200);
-
-          response.result.forEach(supplier => {
-            expect(supplier).to.have.property('_metadata');
-            expect(supplier._metadata).to.have.property('created');
-            expect(supplier._metadata.created).to.be.an.instanceOf(Date);
-          });
-
-          const result = response.result.map(supplier => _.omit(supplier, '_metadata'));
-
-          expect(result).to.deep.equal([
-            _.assign({id: 'B'}, suppliers[1]),
-            _.assign({id: 'A'}, suppliers[0]),
-            _.assign({id: 'C'}, suppliers[2])
-          ]);
+          expect(response.result).to.eql(createdSuppliers);
         });
     });
 
     describe('with delivery to postcode', () => {
       beforeEach(() => {
-        return specRequest({url: '/suppliers/A/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
-          .then(() => specRequest({url: '/suppliers/B/depots/1', method: 'PUT', payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
+        return specRequest({url: `/suppliers/${_.find(createdSuppliers, {name: 'Supplier A'}).id}/depots/1`, method: 'PUT', payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
+          .then(() => specRequest({url: `/suppliers/${_.find(createdSuppliers, {name: 'Supplier B'}).id}/depots/1`, method: 'PUT', payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
       });
 
       it('filters out suppliers that do not deliver to the postcode', () => {

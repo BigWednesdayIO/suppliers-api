@@ -9,11 +9,15 @@ const depotParameters = require('./parameters/depot');
 describe('/suppliers/{id}/depots', () => {
   describe('post', () => {
     const createPayload = depotParameters();
+    let supplier;
     let createResponse;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier 1'}})
-        .then(() => specRequest({url: '/suppliers/1/depots', method: 'POST', payload: createPayload}))
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1'}})
+        .then(response => {
+          supplier = response.result;
+          return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: createPayload});
+        })
         .then(response => {
           createResponse = response;
         });
@@ -32,7 +36,7 @@ describe('/suppliers/{id}/depots', () => {
     });
 
     it('returns created resource location', () => {
-      expect(createResponse.headers.location).to.equal(`/suppliers/1/depots/${createResponse.result.id}`);
+      expect(createResponse.headers.location).to.equal(`/suppliers/${supplier.id}/depots/${createResponse.result.id}`);
     });
 
     it('returns the created resource', () => {
@@ -110,6 +114,9 @@ describe('/suppliers/{id}/depots', () => {
   });
 
   describe('get', () => {
+    let supplier1;
+    let supplier2;
+
     const depots = [
       _.assign(depotParameters(), {name: 'Depot 1'}),
       _.assign(depotParameters(), {name: 'Depot 2'}),
@@ -117,12 +124,18 @@ describe('/suppliers/{id}/depots', () => {
     ];
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier 1'}})
-        .then(() => specRequest({url: '/suppliers/2', method: 'PUT', payload: {name: 'Supplier 2'}}))
-        .then(() => specRequest({url: '/suppliers/1/depots/3', method: 'PUT', payload: depots[2]}))
-        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depots[0]}))
-        .then(() => specRequest({url: '/suppliers/1/depots/2', method: 'PUT', payload: depots[1]}))
-        .then(() => specRequest({url: '/suppliers/2/depots/1', method: 'PUT', payload: _.assign(depotParameters(), {name: 'Supplier 2 depot'})}));
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1'}})
+        .then(response => {
+          supplier1 = response.result;
+          return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 2'}});
+        })
+        .then(response => {
+          supplier2 = response.result;
+          return specRequest({url: `/suppliers/${supplier1.id}/depots/3`, method: 'PUT', payload: depots[2]});
+        })
+        .then(() => specRequest({url: `/suppliers/${supplier1.id}/depots/1`, method: 'PUT', payload: depots[0]}))
+        .then(() => specRequest({url: `/suppliers/${supplier1.id}/depots/2`, method: 'PUT', payload: depots[1]}))
+        .then(() => specRequest({url: `/suppliers/${supplier2.id}/depots/1`, method: 'PUT', payload: _.assign(depotParameters(), {name: 'Supplier 2 depot'})}));
     });
 
     it('returns http 404 for a non existant supplier', () => {
@@ -134,7 +147,7 @@ describe('/suppliers/{id}/depots', () => {
     });
 
     it('returns depots for the supplier', () => {
-      return specRequest({url: '/suppliers/1/depots', method: 'GET'})
+      return specRequest({url: `/suppliers/${supplier1.id}/depots`, method: 'GET'})
         .then(response => {
           expect(response.statusCode).to.equal(200);
 
@@ -156,9 +169,14 @@ describe('/suppliers/{id}/depots', () => {
   });
 
   describe('delete', () => {
+    let supplier;
+
     beforeEach(() => {
-      return specRequest({url: '/suppliers/1', method: 'PUT', payload: {name: 'Supplier'}})
-        .then(() => specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload: depotParameters()}));
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
+        .then(response => {
+          supplier = response.result;
+          return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'PUT', payload: depotParameters()});
+        });
     });
 
     it('returns http 404 when supplier does not exist', () => {
@@ -170,12 +188,12 @@ describe('/suppliers/{id}/depots', () => {
     });
 
     it('returns http 404 when depot does not exist', () => {
-      return specRequest({url: '/suppliers/1/depots/2', method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier.id}/depots/2`, method: 'DELETE'})
         .then(response => expect(response.statusCode).to.equal(404));
     });
 
     it('returns http 204', () => {
-      return specRequest({url: '/suppliers/1/depots/1', method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'DELETE'})
         .then(response => expect(response.statusCode).to.equal(204));
     });
   });

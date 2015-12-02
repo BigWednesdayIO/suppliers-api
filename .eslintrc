@@ -3,7 +3,7 @@
   "rules": {
     "strict": [2, "global"],
     "prefer-reflect": 0,
-    "camelcase": 1
+    "camelcase": 0
   },
   "ecmaFeatures": {
     "arrowFunctions": true,
