@@ -80,7 +80,19 @@
     "ascli": {
       "version": "1.0.0",
       "from": "ascli@>=1.0.0 <2.0.0",
-      "resolved": "https://registry.npmjs.org/ascli/-/ascli-1.0.0.tgz"
+      "resolved": "https://registry.npmjs.org/ascli/-/ascli-1.0.0.tgz",
+      "dependencies": {
+        "colour": {
+          "version": "0.7.1",
+          "from": "colour@latest",
+          "resolved": "https://registry.npmjs.org/colour/-/colour-0.7.1.tgz"
+        },
+        "optjs": {
+          "version": "3.2.1-boom",
+          "from": "optjs@latest",
+          "resolved": "https://registry.npmjs.org/optjs/-/optjs-3.2.1-boom.tgz"
+        }
+      }
     },
     "asn1": {
       "version": "0.2.3",
@@ -129,7 +141,8 @@
       "dependencies": {
         "bluebird": {
           "version": "2.10.2",
-          "from": "bluebird@>=2.9.33 <3.0.0"
+          "from": "bluebird@2.10.2",
+          "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.10.2.tgz"
         },
         "minimatch": {
           "version": "2.0.10",
@@ -442,11 +455,6 @@
       "version": "0.6.2",
       "from": "colors@>=0.6.2 <0.7.0",
       "resolved": "https://registry.npmjs.org/colors/-/colors-0.6.2.tgz"
-    },
-    "colour": {
-      "version": "0.7.1",
-      "from": "colour@latest",
-      "resolved": "https://registry.npmjs.org/colour/-/colour-0.7.1.tgz"
     },
     "combined-stream": {
       "version": "1.0.5",
@@ -1051,6 +1059,18 @@
       "from": "gcloud@>=0.25.0 <0.26.0",
       "resolved": "https://registry.npmjs.org/gcloud/-/gcloud-0.25.1.tgz"
     },
+    "gcloud-datastore-model": {
+      "version": "0.0.1",
+      "from": "gcloud-datastore-model@*",
+      "resolved": "https://registry.npmjs.org/gcloud-datastore-model/-/gcloud-datastore-model-0.0.1.tgz",
+      "dependencies": {
+        "lodash": {
+          "version": "3.10.1",
+          "from": "lodash@*",
+          "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz"
+        }
+      }
+    },
     "gcs-resumable-upload": {
       "version": "0.2.2",
       "from": "gcs-resumable-upload@>=0.2.1 <0.3.0",
@@ -1169,6 +1189,10 @@
           "version": "0.5.0",
           "from": "aws-sign2@>=0.5.0 <0.6.0",
           "resolved": "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.5.0.tgz"
+        },
+        "bluebird": {
+          "version": "2.10.2",
+          "from": "bluebird@>=2.9.30 <3.0.0"
         },
         "har-validator": {
           "version": "1.8.0",
@@ -1410,7 +1434,8 @@
         },
         "boom": {
           "version": "3.0.0",
-          "from": "boom@3.0.0"
+          "from": "boom@3.0.0",
+          "resolved": "https://registry.npmjs.org/boom/-/boom-3.0.0.tgz"
         },
         "call": {
           "version": "3.0.0",
@@ -1573,7 +1598,8 @@
     },
     "hapi-version-route": {
       "version": "1.1.0",
-      "from": "hapi-version-route@>=1.0.0 <2.0.0"
+      "from": "hapi-version-route@1.1.0",
+      "resolved": "https://registry.npmjs.org/hapi-version-route/-/hapi-version-route-1.1.0.tgz"
     },
     "har-validator": {
       "version": "2.0.3",
@@ -1823,7 +1849,8 @@
         },
         "topo": {
           "version": "2.0.0",
-          "from": "topo@>=2.0.0 <3.0.0"
+          "from": "topo@2.0.0",
+          "resolved": "https://registry.npmjs.org/topo/-/topo-2.0.0.tgz"
         }
       }
     },
@@ -1839,7 +1866,8 @@
       "dependencies": {
         "esprima": {
           "version": "2.7.0",
-          "from": "esprima@>=2.6.0 <3.0.0"
+          "from": "esprima@2.7.0",
+          "resolved": "https://registry.npmjs.org/esprima/-/esprima-2.7.0.tgz"
         }
       }
     },
@@ -2389,7 +2417,8 @@
     },
     "moment": {
       "version": "2.10.6",
-      "from": "moment@>=2.0.0 <3.0.0"
+      "from": "moment@2.10.6",
+      "resolved": "https://registry.npmjs.org/moment/-/moment-2.10.6.tgz"
     },
     "ms": {
       "version": "0.7.1",
@@ -2541,11 +2570,6 @@
       "version": "0.6.0",
       "from": "optionator@>=0.6.0 <0.7.0",
       "resolved": "https://registry.npmjs.org/optionator/-/optionator-0.6.0.tgz"
-    },
-    "optjs": {
-      "version": "3.2.1-boom",
-      "from": "optjs@latest",
-      "resolved": "https://registry.npmjs.org/optjs/-/optjs-3.2.1-boom.tgz"
     },
     "os-homedir": {
       "version": "1.0.1",
