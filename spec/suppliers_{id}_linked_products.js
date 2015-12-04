@@ -4,9 +4,10 @@ const _ = require('lodash');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
+const linkedProductParameters = require('./parameters/linked_product.js');
+
 describe('/suppliers/{id}/linked_products', () => {
   const supplierPayload = {name: 'a supplier'};
-  const linkedProductPayload = {product_id: '1'};
 
   describe('post', () => {
     let createResponse;
@@ -16,7 +17,7 @@ describe('/suppliers/{id}/linked_products', () => {
       specRequest({url: '/suppliers', method: 'POST', payload: supplierPayload})
         .then(response => {
           supplierId = response.result.id;
-          return specRequest({url: `${response.headers.location}/linked_products`, method: 'POST', payload: linkedProductPayload});
+          return specRequest({url: `${response.headers.location}/linked_products`, method: 'POST', payload: linkedProductParameters});
         })
         .then(response => createResponse = response));
 
@@ -34,7 +35,7 @@ describe('/suppliers/{id}/linked_products', () => {
     });
 
     it('returns the linked product resource', () => {
-      expect(_.omit(createResponse.result, '_metadata', 'id')).to.deep.equal(linkedProductPayload);
+      expect(_.omit(createResponse.result, '_metadata', 'id')).to.deep.equal(linkedProductParameters);
     });
 
     it('returns the location of the created linked product', () => {
@@ -42,7 +43,7 @@ describe('/suppliers/{id}/linked_products', () => {
     });
 
     it('returns http 404 when supplier does not exist', () =>
-      specRequest({url: '/suppliers/abc/linked_products', method: 'POST', payload: linkedProductPayload})
+      specRequest({url: '/suppliers/abc/linked_products', method: 'POST', payload: linkedProductParameters})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "abc" not found.');

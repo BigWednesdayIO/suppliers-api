@@ -4,9 +4,10 @@ const _ = require('lodash');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
+const linkedProductParameters = require('./parameters/linked_product.js');
+
 describe('/suppliers/{id}/linked_products/{id}', () => {
   const supplierPayload = {name: 'a supplier'};
-  const linkedProductPayload = {product_id: '1'};
   let createSupplierResponse;
   let createResponse;
 
@@ -14,7 +15,7 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     specRequest({url: '/suppliers', method: 'POST', payload: supplierPayload})
       .then(response => {
         createSupplierResponse = response;
-        return specRequest({url: `${response.headers.location}/linked_products`, method: 'POST', payload: linkedProductPayload});
+        return specRequest({url: `${response.headers.location}/linked_products`, method: 'POST', payload: linkedProductParameters});
       })
       .then(response => createResponse = response));
 
@@ -39,7 +40,7 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     });
 
     it('returns the linked product resource', () => {
-      expect(_.omit(getResponse.result, '_metadata', 'id')).to.deep.equal(linkedProductPayload);
+      expect(_.omit(getResponse.result, '_metadata', 'id')).to.deep.equal(linkedProductParameters);
     });
 
     it('returns http 404 when supplier does not exist', () =>
@@ -55,7 +56,7 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
   });
 
   describe('put', () => {
-    const updatePayload = Object.assign({}, linkedProductPayload, {product_id: '2'});
+    const updatePayload = Object.assign({}, linkedProductParameters, {product_id: '2'});
     let updateResponse;
     let getUpdatedResponse;
 
