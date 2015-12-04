@@ -101,4 +101,35 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
       specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'PUT', payload: updatePayload})
         .then(response => expect(response.statusCode).to.equal(404)));
   });
+
+  describe('delete', () => {
+    let deleteResponse;
+
+    beforeEach(() =>
+      specRequest({url: createResponse.headers.location, method: 'DELETE'})
+        .then(response => deleteResponse = response));
+
+    it('returns http 204', () => {
+      expect(deleteResponse.statusCode).to.equal(204);
+    });
+
+    it('returns nothing', () => {
+      expect(deleteResponse.result).to.not.exist;
+    });
+
+    it('deletes the resource', () =>
+      specRequest({url: createResponse.headers.location, method: 'GET'})
+        .then(response => expect(response.statusCode).to.equal(404)));
+
+    it('returns http 404 when supplier does not exist', () =>
+      specRequest({url: '/suppliers/abc/linked_products/1', method: 'DELETE'})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+          expect(response.result).to.have.property('message', 'Supplier "abc" not found.');
+        }));
+
+    it('returns http 404 when linked product does not exist', () =>
+      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'DELETE'})
+        .then(response => expect(response.statusCode).to.equal(404)));
+  });
 });
