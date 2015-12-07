@@ -22,20 +22,17 @@ describe('/suppliers', () => {
       expect(createResponse.statusCode).to.equal(201);
     });
 
-    it('returns created resource location', () => {
-      expect(createResponse.headers.location).to.equal(`/suppliers/${createResponse.result.id}`);
+    it('returns a generated supplier id', () => {
+      expect(createResponse.result).to.have.property('id');
+      expect(createResponse.result.id).to.match(/^c.{24}$/);
     });
 
     it('returns the supplier resource', () => {
-      const resource = _.clone(createSupplierPayload);
-      resource.id = createResponse.result.id;
+      expect(_.omit(createResponse.result, '_metadata', 'id')).to.deep.equal(createSupplierPayload);
+    });
 
-      expect(createResponse.result).to.have.property('_metadata');
-      expect(createResponse.result._metadata).to.have.property('created');
-      expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
-
-      const result = _.omit(createResponse.result, '_metadata');
-      expect(result).to.deep.equal(resource);
+    it('returns created resource location', () => {
+      expect(createResponse.headers.location).to.equal(`/suppliers/${createResponse.result.id}`);
     });
 
     describe('validation', () => {
@@ -108,12 +105,6 @@ describe('/suppliers', () => {
           specRequest({url: '/suppliers?deliver_to=se228ly', method: 'GET'})
         ])
         .then(responses => {
-          responses.forEach(response => response.result.forEach(supplier => {
-            expect(supplier).to.have.property('_metadata');
-            expect(supplier._metadata).to.have.property('created');
-            expect(supplier._metadata.created).to.be.an.instanceOf(Date);
-          }));
-
           const result1 = responses[0].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
           expect(result1).to.deep.equal([suppliers[1]]);
 
