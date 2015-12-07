@@ -7,7 +7,7 @@
     "start": "node index.js",
     "test": "grunt test",
     "spec": "grunt spec",
-    "ci": "grunt ci",
+    "ci": "grunt retire && grunt lint && grunt test && grunt spec",
     "watch": "grunt watch"
   },
   "repository": {
