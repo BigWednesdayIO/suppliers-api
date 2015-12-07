@@ -14,7 +14,9 @@ describe('/suppliers/{id}/linked_products - validation', () => {
 
   const attributes = [
     {name: 'product_id', type: 'string', required: true},
-    {name: 'product_code', type: 'string'}
+    {name: 'product_code', type: 'string'},
+    {name: 'price', type: 'money', required: true},
+    {name: 'was_price', type: 'money'}
   ];
 
   [{method: 'POST', url: '/linked_products'}, {method: 'PUT', url: '/linked_products/1'}]
@@ -37,6 +39,33 @@ describe('/suppliers/{id}/linked_products - validation', () => {
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must be a string]`);
+            });
+        });
+      });
+
+      // test money attributes
+      attributes.filter(a => a.type === 'money').forEach(attribute => {
+        it(`rejects non-numeric ${attribute.name} values for ${request.method} request`, () => {
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 'abc'})})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must be a number]`);
+            });
+        });
+
+        it(`rejects number ${attribute.name} values below 0.01 for ${request.method} request`, () => {
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 0})})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must be larger than or equal to 0.01]`);
+            });
+        });
+
+        it(`rejects number ${attribute.name} values with too many decimal places for ${request.method} request`, () => {
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 10.254})})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must have no more than 2 decimal places]`);
             });
         });
       });

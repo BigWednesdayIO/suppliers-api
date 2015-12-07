@@ -22,7 +22,9 @@ const verifySupplier = (request, reply) => {
 
 const linkedProductsAttributes = {
   product_id: Joi.string().required().description('The product identifier'),
-  product_code: Joi.string().description('The supplier\'s product code or identifier')
+  product_code: Joi.string().description('The supplier\'s product code or identifier'),
+  price: Joi.number().precision(2).min(0.01).required().description('The base price for the supplier'),
+  was_price: Joi.number().precision(2).min(0.01).required().description('The previous price for the supplier')
 };
 
 const requestSchema = Joi.object(linkedProductsAttributes).meta({className: 'LinkedProductParameters'});

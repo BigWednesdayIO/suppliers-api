@@ -26,7 +26,17 @@ const plugins = [{
 }];
 
 module.exports = callback => {
-  const server = new Hapi.Server();
+  const server = new Hapi.Server({
+    connections: {
+      routes: {
+        validate: {
+          options: {
+            convert: false
+          }
+        }
+      }
+    }
+  });
 
   server.connection({port: 8080});
 
