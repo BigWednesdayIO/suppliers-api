@@ -39,15 +39,13 @@ describe('/suppliers/{id}/depots', () => {
       expect(createResponse.headers.location).to.equal(`/suppliers/${supplier.id}/depots/${createResponse.result.id}`);
     });
 
+    it('returns created and updated dates', () => {
+      expect(createResponse.result._metadata.created).to.be.a('date');
+      expect(createResponse.result._metadata.updated).to.be.a('date');
+    });
+
     it('returns the created resource', () => {
-      expect(createResponse.result).to.have.property('_metadata');
-      expect(createResponse.result._metadata).to.have.property('created');
-      expect(createResponse.result._metadata.created).to.be.an.instanceOf(Date);
-
-      const result = _.omit(createResponse.result, '_metadata');
-      const resource = _.assign({id: createResponse.result.id}, createPayload);
-
-      expect(result).to.deep.equal(resource);
+      expect(_.omit(createResponse.result, '_metadata', 'id')).to.deep.equal(createPayload);
     });
 
     describe('validation', () => {
@@ -123,6 +121,11 @@ describe('/suppliers/{id}/depots', () => {
       _.assign(depotParameters(), {name: 'Depot 3'})
     ];
 
+    let createdDepot1;
+    let createdDepot2;
+    let createdDepot3;
+    let getResponse;
+
     beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1'}})
         .then(response => {
@@ -131,11 +134,22 @@ describe('/suppliers/{id}/depots', () => {
         })
         .then(response => {
           supplier2 = response.result;
-          return specRequest({url: `/suppliers/${supplier1.id}/depots/3`, method: 'PUT', payload: depots[2]});
+          return specRequest({url: `/suppliers/${supplier1.id}/depots`, method: 'POST', payload: depots[2]});
         })
-        .then(() => specRequest({url: `/suppliers/${supplier1.id}/depots/1`, method: 'PUT', payload: depots[0]}))
-        .then(() => specRequest({url: `/suppliers/${supplier1.id}/depots/2`, method: 'PUT', payload: depots[1]}))
-        .then(() => specRequest({url: `/suppliers/${supplier2.id}/depots/1`, method: 'PUT', payload: _.assign(depotParameters(), {name: 'Supplier 2 depot'})}));
+        .then(response => {
+          createdDepot3 = response.result;
+          return specRequest({url: `/suppliers/${supplier1.id}/depots`, method: 'POST', payload: depots[0]});
+        })
+        .then(response => {
+          createdDepot1 = response.result;
+          return specRequest({url: `/suppliers/${supplier1.id}/depots`, method: 'POST', payload: depots[1]});
+        })
+        .then(response => {
+          createdDepot2 = response.result;
+          return specRequest({url: `/suppliers/${supplier2.id}/depots`, method: 'POST', payload: _.assign(depotParameters(), {name: 'Supplier 2 depot'})});
+        })
+        .then(() => specRequest({url: `/suppliers/${supplier1.id}/depots`, method: 'GET'}))
+        .then(response => getResponse = response);
     });
 
     it('returns http 404 for a non existant supplier', () => {
@@ -146,37 +160,36 @@ describe('/suppliers/{id}/depots', () => {
         });
     });
 
-    it('returns depots for the supplier', () => {
-      return specRequest({url: `/suppliers/${supplier1.id}/depots`, method: 'GET'})
-        .then(response => {
-          expect(response.statusCode).to.equal(200);
+    it('returns the depots for the supplier', () => {
+      expect(_.map(getResponse.result, 'id')).to.be.deep.equal([createdDepot3.id, createdDepot1.id, createdDepot2.id]);
+    });
 
-          response.result.forEach(depot => {
-            expect(depot).to.have.property('_metadata');
-            expect(depot._metadata).to.have.property('created');
-            expect(depot._metadata.created).to.be.an.instanceOf(Date);
-          });
+    it('returns the created and updated dates of the depots', () => {
+      [createdDepot3, createdDepot1, createdDepot2].forEach((createdDepot, index) => {
+        expect(getResponse.result[index]).to.have.property('_metadata');
+        expect(getResponse.result[index]._metadata.created).to.deep.equal(createdDepot._metadata.created);
+        expect(getResponse.result[index]._metadata.updated).to.deep.equal(createdDepot._metadata.updated);
+      });
+    });
 
-          const result = response.result.map(depot => _.omit(depot, '_metadata'));
-
-          expect(result).to.deep.equal([
-            _.assign({id: '3'}, depots[2]),
-            _.assign({id: '1'}, depots[0]),
-            _.assign({id: '2'}, depots[1])
-          ]);
-        });
+    it('returns the depot resource attributes', () => {
+      [createdDepot3, createdDepot1, createdDepot2].forEach((createdDepot, index) => {
+        expect(_.omit(getResponse.result[index], 'id', '_metadata')).to.deep.equal(_.omit(createdDepot, 'id', '_metadata'));
+      });
     });
   });
 
   describe('delete', () => {
     let supplier;
+    let createdDepot;
 
     beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
         .then(response => {
           supplier = response.result;
-          return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'PUT', payload: depotParameters()});
-        });
+          return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: depotParameters()});
+        })
+        .then(response => createdDepot = response.result);
     });
 
     it('returns http 404 when supplier does not exist', () => {
@@ -193,7 +206,7 @@ describe('/suppliers/{id}/depots', () => {
     });
 
     it('returns http 204', () => {
-      return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier.id}/depots/${createdDepot.id}`, method: 'DELETE'})
         .then(response => expect(response.statusCode).to.equal(204));
     });
   });
