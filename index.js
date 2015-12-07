@@ -1,6 +1,6 @@
 'use strict';
 
-require('./lib/server')((err, server) => {
+require('./server')((err, server) => {
   if (err) {
     return console.error(err);
   }

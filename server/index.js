@@ -9,11 +9,11 @@ const plugins = [{
 }, {
   register: require('hapi-boom-decorators')
 }, {
-  register: require('./routes/suppliers')
+  register: require('./suppliers')
 }, {
-  register: require('./routes/depots')
+  register: require('./depots')
 }, {
-  register: require('./routes/linked_products')
+  register: require('./linked_products')
 }, {
   register: Swaggered,
   options: {

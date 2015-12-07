@@ -2,9 +2,9 @@
 
 const expect = require('chai').expect;
 
-const dataset = require('../lib/models/dataset');
+const dataset = require('../lib/dataset');
 
-describe.only('Dataset', () => {
+describe('Dataset', () => {
   describe('supplier key', () => {
     let key;
 

@@ -5,7 +5,7 @@ const expect = require('chai').expect;
 const proxyquire = require('proxyquire');
 const sinon = require('sinon');
 
-const dataset = require('../../../lib/models/dataset');
+const dataset = require('../lib/dataset');
 
 const supplierEntities = [
   {key: {path: ['Supplier', '1']}, data: {name: 'scotland supplier'}},
@@ -34,7 +34,7 @@ const stubDatastoreModel = () => {
   };
 };
 
-const Supplier = proxyquire('../../../lib/models/supplier', {'gcloud-datastore-model': stubDatastoreModel});
+const Supplier = proxyquire('../lib/supplier', {'gcloud-datastore-model': stubDatastoreModel});
 
 describe('Supplier', () => {
   describe('findByDeliveryLocations', () => {

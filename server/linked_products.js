@@ -3,7 +3,7 @@
 const cuid = require('cuid');
 const Joi = require('joi');
 
-const dataset = require('../models/dataset');
+const dataset = require('../lib/dataset');
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
 const verifySupplier = (request, reply) => {

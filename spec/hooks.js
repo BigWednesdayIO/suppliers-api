@@ -1,7 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
-const dataset = require('../lib/models/dataset');
+const dataset = require('../lib/dataset');
 
 const preloadPostcodeData = () => {
   const entities = [

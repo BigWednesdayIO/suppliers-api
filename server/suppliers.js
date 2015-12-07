@@ -5,10 +5,9 @@ const cuid = require('cuid');
 const Joi = require('joi');
 const request = require('request');
 
-const dataset = require('../models/dataset');
+const dataset = require('../lib/dataset');
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
-
-const Supplier = require('../models/supplier');
+const Supplier = require('../lib/supplier');
 
 const postcodesApi = `http://${process.env.POSTCODES_API_SVC_HOST}:${process.env.POSTCODES_API_SVC_PORT}`;
 
