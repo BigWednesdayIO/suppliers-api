@@ -58,7 +58,11 @@ module.exports.register = (server, options, next) => {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier')
         },
-        payload: requestSchema.description('The linked product to add to the supplier')
+        payload: requestSchema.description('The linked product to add to the supplier'),
+        options: {
+          // disable conversion, otherwise decimal precision is automatically rounded and not validated
+          convert: false
+        }
       },
       response: {
         status: {
@@ -89,9 +93,6 @@ module.exports.register = (server, options, next) => {
         },
         query: {
           hitsPerPage: Joi.number().integer().min(1).description('Number of products to return')
-        },
-        options: {
-          convert: true
         }
       },
       response: {
@@ -157,7 +158,11 @@ module.exports.register = (server, options, next) => {
           supplierId: Joi.string().required().description('Supplier identifier'),
           id: Joi.string().required().description('Linked product identifier')
         },
-        payload: requestSchema.description('The update linked product')
+        payload: requestSchema.description('The update linked product'),
+        options: {
+          // disable conversion, otherwise decimal precision is automatically rounded and not validated
+          convert: false
+        }
       },
       response: {
         status: {
