@@ -15,7 +15,6 @@ dependencies:
   override:
     - gcloud_scripts/install_sdk.sh
     - gcloud_scripts/authenticate.sh
-    - sudo pip install -U docker-compose
     - if [[ -e ~/docker/node.tar ]]; then docker load -i ~/docker/node.tar; fi
     - if [[ -e ~/docker/gcd.tar ]]; then docker load -i ~/docker/gcd.tar; fi
     - docker pull node:5.1.1
