@@ -1,7 +1,11 @@
 'use strict';
 
 const _ = require('lodash');
+const bluebird = require('bluebird');
+const nock = require('nock');
 const dataset = require('../lib/dataset');
+const auth0 = require('../lib/auth0_client');
+const auth0Stubber = require('./auth0_stubber');
 
 const preloadPostcodeData = () => {
   const entities = [
@@ -50,18 +54,48 @@ module.exports.deleteTestData = kind => {
   });
 };
 
-before(() => Promise.all([
-  preloadPostcodeData(),
-  preloadProductData()
-]));
+before(() => {
+  nock.recorder.rec({
+    dont_print: true,
+    output_objects: true
+  });
 
-afterEach(() => Promise.all([
-  module.exports.deleteTestData('Supplier'),
-  module.exports.deleteTestData('Depot'),
-  module.exports.deleteTestData('SupplierLinkedProduct')
-]));
+  return Promise.all([
+    preloadPostcodeData(),
+    preloadProductData()
+  ]);
+});
 
-after(() => Promise.all([
-  module.exports.deleteTestData('Postcode'),
-  module.exports.deleteTestData('Product')
-]));
+beforeEach(() => {
+  auth0Stubber.enable();
+});
+
+afterEach(() => {
+  auth0Stubber.disable();
+
+  return Promise.all([
+    module.exports.deleteTestData('Supplier'),
+    module.exports.deleteTestData('Depot'),
+    module.exports.deleteTestData('SupplierLinkedProduct')
+  ]);
+});
+
+after(function () {
+  this.timeout(5000);
+  const nockCallObjects = nock.recorder.play();
+  const createdInAuth0 = _(nockCallObjects)
+    .filter({
+      path: '/api/users/',
+      scope: `https://${process.env.AUTH0_DOMAIN}:443`,
+      method: 'POST',
+      status: 200
+    })
+    .map(r => r.response.user_id)
+    .value();
+
+  return bluebird.mapSeries(createdInAuth0, id => bluebird.fromCallback(callback => auth0.deleteUser(id, callback)))
+    .then(() => Promise.all([
+      module.exports.deleteTestData('Postcode'),
+      module.exports.deleteTestData('Product')
+    ]));
+});
