@@ -10,7 +10,7 @@ checkout:
 
 dependencies:
   cache_directories:
-    - '~/docker'
+    - ~/docker
     - ~/google-cloud-sdk
   override:
     - gcloud_scripts/install_sdk.sh
@@ -18,11 +18,21 @@ dependencies:
     - if [[ -e ~/docker/node.tar ]]; then docker load -i ~/docker/node.tar; fi
     - if [[ -e ~/docker/gcd.tar ]]; then docker load -i ~/docker/gcd.tar; fi
     - docker pull node:5.1.1
-    - docker pull risaacson/gcd-local:v1beta2-rev1-3.0.0
+    - docker pull risaacson/gcd-local:v1beta2-rev1-3.0.2
     - mkdir -p ~/docker
     - docker save node:5.1.1 > ~/docker/node.tar
-    - docker save risaacson/gcd-local:v1beta2-rev1-3.0.0 > ~/docker/gcd.tar
+    - docker save risaacson/gcd-local:v1beta2-rev1-3.0.2 > ~/docker/gcd.tar
 
 test:
   override:
     - docker-compose run api npm run ci
+
+deployment:
+  dev:
+    branch: master
+    commands:
+      - OVERRIDE_IMAGE_TAG=dev gcloud_scripts/kubernetes_deploy.sh suppliers-api app=suppliers-api development ${PWD} ${PWD}/kubernetes/rc.json ${PWD}/kubernetes/service.json
+  prod:
+    tag: /v.*/
+    commands:
+      - gcloud_scripts/kubernetes_deploy.sh suppliers-api app=suppliers-api production ${PWD} ${PWD}/kubernetes/rc.json ${PWD}/kubernetes/service.json
