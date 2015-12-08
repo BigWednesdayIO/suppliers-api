@@ -96,7 +96,7 @@ module.exports.register = (server, options, next) => {
           supplierId: Joi.string().required().description('Supplier identifier')
         },
         query: {
-          hitsPerPage: Joi.number().integer().min(1).description('Number of products to return for a page'),
+          hitsPerPage: Joi.number().integer().min(1).max(50).description('Number of products to return for a page'),
           page: Joi.number().integer().min(1).description('The page number to return')
         }
       },

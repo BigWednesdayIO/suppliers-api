@@ -127,5 +127,12 @@ describe('/suppliers/{id}/linked_products', () => {
             expect(response.result).to.have.property('message', `child "${attribute}" fails because ["${attribute}" must be larger than or equal to 1]`);
           }));
     });
+
+    it('rejects with http 400 when hitsPerPage is above 50', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=51`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be less than or equal to 50]');
+        }));
   });
 });
