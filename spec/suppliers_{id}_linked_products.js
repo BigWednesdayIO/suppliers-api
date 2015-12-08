@@ -81,5 +81,33 @@ describe('/suppliers/{id}/linked_products', () => {
       const expectedResults = createResponses.slice(0, 10).map(response => response.result);
       expect(getResponse.result).to.deep.equal(expectedResults);
     });
+
+    it('returns a custom page size', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3`, method: 'GET'})
+        .then(response => {
+          const expectedResults = createResponses.slice(0, 3).map(response => response.result);
+          expect(response.result).to.deep.equal(expectedResults);
+        }));
+
+    it('rejects with http 400 when hitsPerPage is not a number', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=test`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be a number]');
+        }));
+
+    it('rejects with http 400 when hitsPerPage is not an integer', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=1.5`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be an integer]');
+        }));
+
+    it('rejects with http 400 when hitsPerPage is not above zero', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=0`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be larger than or equal to 1]');
+        }));
   });
 });

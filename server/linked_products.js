@@ -72,7 +72,7 @@ module.exports.register = (server, options, next) => {
     method: 'GET',
     path: '/suppliers/{supplierId}/linked_products',
     handler: (request, reply) => {
-      const query = datasetEntities.linkedProductQuery().limit(10);
+      const query = datasetEntities.linkedProductQuery().limit(request.query.hitsPerPage || 10);
 
       DatastoreModel.find(query)
         .then(reply)
@@ -86,6 +86,12 @@ module.exports.register = (server, options, next) => {
       validate: {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier')
+        },
+        query: {
+          hitsPerPage: Joi.number().integer().min(1).description('Number of products to return')
+        },
+        options: {
+          convert: true
         }
       },
       response: {
