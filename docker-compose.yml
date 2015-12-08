@@ -1,5 +1,5 @@
 gclouddatastore:
-  image: risaacson/gcd-local:v1beta2-rev1-3.0.0
+  image: risaacson/gcd-local:v1beta2-rev1-3.0.2
   environment:
     - PROJ_ID=suppliers
     - CONSISTENCY=1.0
