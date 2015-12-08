@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const cuid = require('cuid');
 const expect = require('chai').expect;
 
 const specRequest = require('./spec_request');
@@ -13,7 +14,7 @@ describe('/suppliers/{id}/depots', () => {
     let createResponse;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1'}})
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
         .then(response => {
           supplier = response.result;
           return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: createPayload});
@@ -127,10 +128,10 @@ describe('/suppliers/{id}/depots', () => {
     let getResponse;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1'}})
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 1', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
         .then(response => {
           supplier1 = response.result;
-          return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 2'}});
+          return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier 2', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}});
         })
         .then(response => {
           supplier2 = response.result;
@@ -184,7 +185,7 @@ describe('/suppliers/{id}/depots', () => {
     let createdDepot;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
         .then(response => {
           supplier = response.result;
           return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: depotParameters()});

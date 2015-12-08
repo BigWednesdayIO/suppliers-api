@@ -1,6 +1,7 @@
 'use strict';
 
 const _ = require('lodash');
+const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 const linkedProductParameters = require('./parameters/linked_product');
@@ -9,7 +10,7 @@ describe('/suppliers/{id}/linked_products - validation', () => {
   let supplierRoute;
 
   beforeEach(() =>
-    specRequest({url: '/suppliers', method: 'POST', payload: {name: 'a supplier'}})
+    specRequest({url: '/suppliers', method: 'POST', payload: {name: 'a supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
       .then(response => supplierRoute = response.headers.location));
 
   const attributes = [
