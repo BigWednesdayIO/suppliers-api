@@ -5,12 +5,13 @@ const cuid = require('cuid');
 const Joi = require('joi');
 
 const dataset = require('../lib/dataset');
+const datasetEntities = require('../lib/dataset_entities');
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
 const verifySupplier = (request, reply) => {
   const supplierId = request.params.supplierId;
 
-  DatastoreModel.get(dataset.supplierKey(supplierId))
+  DatastoreModel.get(datasetEntities.supplierKey(supplierId))
     .then(() => reply(), err => {
       if (err.name === 'EntityNotFoundError') {
         return reply.supplierNotFound(supplierId);
@@ -53,7 +54,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers/{supplierId}/depots',
     handler: (request, reply) => {
-      const query = dataset.depotQuery().hasAncestor(dataset.supplierKey(request.params.supplierId));
+      const query = datasetEntities.depotQuery().hasAncestor(datasetEntities.supplierKey(request.params.supplierId));
       DatastoreModel.find(query)
         .then(reply, reply.error.bind(reply));
     },
@@ -78,7 +79,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers/{supplierId}/depots/{id}',
     handler: (request, reply) => {
-      DatastoreModel.get(dataset.depotKey(request.params.supplierId, request.params.id))
+      DatastoreModel.get(datasetEntities.depotKey(request.params.supplierId, request.params.id))
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -110,7 +111,7 @@ exports.register = function (server, options, next) {
     method: 'POST',
     path: '/suppliers/{supplierId}/depots',
     handler: (request, reply) => {
-      DatastoreModel.insert(dataset.depotKey(request.params.supplierId, cuid()), request.payload)
+      DatastoreModel.insert(datasetEntities.depotKey(request.params.supplierId, cuid()), request.payload)
         .then(depot => reply(depot).created(`/suppliers/${request.params.supplierId}/depots/${depot.id}`))
         .catch(reply.error.bind(reply));
     },
@@ -136,7 +137,7 @@ exports.register = function (server, options, next) {
     method: 'PUT',
     path: '/suppliers/{supplierId}/depots/{id}',
     handler: (request, reply) => {
-      DatastoreModel.update(dataset.depotKey(request.params.supplierId, request.params.id), request.payload)
+      DatastoreModel.update(datasetEntities.depotKey(request.params.supplierId, request.params.id), request.payload)
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -170,7 +171,7 @@ exports.register = function (server, options, next) {
     method: 'DELETE',
     path: '/suppliers/{supplierId}/depots/{id}',
     handler: (request, reply) => {
-      DatastoreModel.get(dataset.depotKey(request.params.supplierId, request.params.id))
+      DatastoreModel.get(datasetEntities.depotKey(request.params.supplierId, request.params.id))
         .then(() => reply().code(204))
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {

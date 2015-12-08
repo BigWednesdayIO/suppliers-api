@@ -4,12 +4,14 @@ const cuid = require('cuid');
 const Joi = require('joi');
 
 const dataset = require('../lib/dataset');
+const datasetEntities = require('../lib/dataset_entities');
+
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
 const verifySupplier = (request, reply) => {
   const supplierId = request.params.supplierId;
 
-  DatastoreModel.get(dataset.supplierKey(supplierId))
+  DatastoreModel.get(datasetEntities.supplierKey(supplierId))
     .then(() => reply(), err => {
       if (err.name === 'EntityNotFoundError') {
         return reply.supplierNotFound(supplierId);
@@ -42,7 +44,7 @@ module.exports.register = (server, options, next) => {
     method: 'POST',
     path: '/suppliers/{supplierId}/linked_products',
     handler: (request, reply) => {
-      DatastoreModel.insert(dataset.linkedProductKey(request.params.supplierId, cuid()), request.payload)
+      DatastoreModel.insert(datasetEntities.linkedProductKey(request.params.supplierId, cuid()), request.payload)
         .then(linkedProduct => reply(linkedProduct).created(`/suppliers/${request.params.supplierId}/linked_products/${linkedProduct.id}`))
         .catch(err => {
           console.error(err);
@@ -70,7 +72,7 @@ module.exports.register = (server, options, next) => {
     method: 'GET',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
-      DatastoreModel.get(dataset.linkedProductKey(request.params.supplierId, request.params.id))
+      DatastoreModel.get(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id))
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -102,7 +104,7 @@ module.exports.register = (server, options, next) => {
     method: 'PUT',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
-      DatastoreModel.update(dataset.linkedProductKey(request.params.supplierId, request.params.id), request.payload)
+      DatastoreModel.update(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id), request.payload)
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -135,7 +137,7 @@ module.exports.register = (server, options, next) => {
     method: 'DELETE',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
-      DatastoreModel.delete(dataset.linkedProductKey(request.params.supplierId, request.params.id))
+      DatastoreModel.delete(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id))
         .then(() => reply().code(204))
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {

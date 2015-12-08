@@ -6,8 +6,10 @@ const Joi = require('joi');
 const request = require('request');
 
 const dataset = require('../lib/dataset');
-const DatastoreModel = require('gcloud-datastore-model')(dataset);
+const datasetEntities = require('../lib/dataset_entities');
 const supplierQueries = require('../lib/supplier_queries');
+
+const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
 const postcodesApi = `http://${process.env.POSTCODES_API_SVC_HOST}:${process.env.POSTCODES_API_SVC_PORT}`;
 
@@ -60,7 +62,7 @@ exports.register = function (server, options, next) {
     method: 'POST',
     path: '/suppliers',
     handler: (request, reply) => {
-      DatastoreModel.insert(dataset.supplierKey(cuid()), request.payload).then(supplier => {
+      DatastoreModel.insert(datasetEntities.supplierKey(cuid()), request.payload).then(supplier => {
         reply(supplier).created(`/suppliers/${supplier.id}`);
       }, reply.error.bind(reply));
     },
@@ -82,7 +84,7 @@ exports.register = function (server, options, next) {
     method: 'PUT',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      DatastoreModel.update(dataset.supplierKey(request.params.id), request.payload)
+      DatastoreModel.update(datasetEntities.supplierKey(request.params.id), request.payload)
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -115,7 +117,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      DatastoreModel.get(dataset.supplierKey(request.params.id))
+      DatastoreModel.get(datasetEntities.supplierKey(request.params.id))
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -148,7 +150,7 @@ exports.register = function (server, options, next) {
     handler: (request, reply) => {
       const get = request.pre.postcodeData ?
         supplierQueries.findByDeliveryLocations(request.pre.postcodeData) :
-        DatastoreModel.find(dataset.supplierQuery());
+        DatastoreModel.find(datasetEntities.supplierQuery());
 
       get.then(result => {
         reply(result);
@@ -175,7 +177,7 @@ exports.register = function (server, options, next) {
     method: 'DELETE',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      const hasDepotsQuery = dataset.depotQuery().hasAncestor(dataset.supplierKey(request.params.id));
+      const hasDepotsQuery = datasetEntities.depotQuery().hasAncestor(datasetEntities.supplierKey(request.params.id));
 
       DatastoreModel.find(hasDepotsQuery)
         .then(depots => {
@@ -183,7 +185,7 @@ exports.register = function (server, options, next) {
             return reply(Boom.conflict(`Supplier "${request.params.id}" has associated depots, which must be deleted first.`));
           }
 
-          return DatastoreModel.delete(dataset.supplierKey(request.params.id))
+          return DatastoreModel.delete(datasetEntities.supplierKey(request.params.id))
             .then(() => reply().code(204))
             .catch(err => {
               if (err.name === 'EntityNotFoundError') {

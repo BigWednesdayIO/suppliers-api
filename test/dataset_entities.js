@@ -2,14 +2,14 @@
 
 const expect = require('chai').expect;
 
-const dataset = require('../lib/dataset');
+const datasetEntities = require('../lib/dataset_entities');
 
-describe('Dataset', () => {
+describe('Dataset entities', () => {
   describe('supplier key', () => {
     let key;
 
     before(() => {
-      key = dataset.supplierKey('myid123');
+      key = datasetEntities.supplierKey('myid123');
     });
 
     it('creates a key containing the supplier kind', () => {
@@ -21,7 +21,7 @@ describe('Dataset', () => {
     });
 
     it('errors when supplier id is not provided', () => {
-      expect(() => dataset.supplierKey()).to.throw(Error, /Missing supplier identifier/);
+      expect(() => datasetEntities.supplierKey()).to.throw(Error, /Missing supplier identifier/);
     });
   });
 
@@ -29,7 +29,7 @@ describe('Dataset', () => {
     let key;
 
     before(() => {
-      key = dataset.depotKey('supplierid123', 'depotidabc');
+      key = datasetEntities.depotKey('supplierid123', 'depotidabc');
     });
 
     it('creates a key containing the supplier kind', () => {
@@ -49,11 +49,11 @@ describe('Dataset', () => {
     });
 
     it('errors when supplier id is not provided', () => {
-      expect(() => dataset.depotKey()).to.throw(Error, /Missing supplier identifier/);
+      expect(() => datasetEntities.depotKey()).to.throw(Error, /Missing supplier identifier/);
     });
 
     it('errors when depot id is not provided', () => {
-      expect(() => dataset.depotKey('supplierid')).to.throw(Error, /Missing depot identifier/);
+      expect(() => datasetEntities.depotKey('supplierid')).to.throw(Error, /Missing depot identifier/);
     });
   });
 
@@ -61,7 +61,7 @@ describe('Dataset', () => {
     let key;
 
     before(() => {
-      key = dataset.linkedProductKey('supplierid123', 'linkedproduct999');
+      key = datasetEntities.linkedProductKey('supplierid123', 'linkedproduct999');
     });
 
     it('creates a key containing the supplier kind', () => {
@@ -81,11 +81,11 @@ describe('Dataset', () => {
     });
 
     it('errors when supplier id is not provided', () => {
-      expect(() => dataset.linkedProductKey()).to.throw(Error, /Missing supplier identifier/);
+      expect(() => datasetEntities.linkedProductKey()).to.throw(Error, /Missing supplier identifier/);
     });
 
     it('errors when linked product id is not provided', () => {
-      expect(() => dataset.linkedProductKey('supplierid')).to.throw(Error, /Missing linked product identifier/);
+      expect(() => datasetEntities.linkedProductKey('supplierid')).to.throw(Error, /Missing linked product identifier/);
     });
   });
 
@@ -93,11 +93,11 @@ describe('Dataset', () => {
     const fn = `${kind.substr(0, 1).toLowerCase() + kind.substr(1)}Query`;
 
     it(`${fn} generates a query for the ${kind} kind`, () => {
-      expect(dataset[fn]().kinds).to.deep.equal([kind]);
+      expect(datasetEntities[fn]().kinds).to.deep.equal([kind]);
     });
 
     it(`${fn} sets a default order on created date`, () => {
-      expect(dataset[fn]().orders).to.deep.equal([{name: '_metadata_created', sign: '+'}]);
+      expect(datasetEntities[fn]().orders).to.deep.equal([{name: '_metadata_created', sign: '+'}]);
     });
   });
 });
