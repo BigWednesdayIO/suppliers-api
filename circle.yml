@@ -26,3 +26,13 @@ dependencies:
 test:
   override:
     - docker-compose run api npm run ci
+
+deployment:
+  dev:
+    branch: master
+    commands:
+      - OVERRIDE_IMAGE_TAG=dev gcloud_scripts/kubernetes_deploy.sh suppliers-api app=suppliers-api development ${PWD} ${PWD}/kubernetes/rc.json ${PWD}/kubernetes/service.json
+  prod:
+    tag: /v.*/
+    commands:
+      - gcloud_scripts/kubernetes_deploy.sh suppliers-api app=suppliers-api production ${PWD} ${PWD}/kubernetes/rc.json ${PWD}/kubernetes/service.json

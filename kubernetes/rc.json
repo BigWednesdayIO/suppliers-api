@@ -1,0 +1,46 @@
+{
+  "apiVersion": "v1",
+  "kind": "ReplicationController",
+  "metadata": {
+    "name": "suppliers-api-rc-{{VERSION}}",
+    "labels": {
+      "app": "suppliers-api",
+      "env": "{{NAMESPACE}}"
+    }
+  },
+  "spec": {
+    "replicas": {{REPLICAS}},
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "suppliers-api",
+          "env": "{{NAMESPACE}}",
+          "deployment": "{{DEPLOYMENT_ID}}"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "api",
+            "image": "{{QUALIFIED_IMAGE_NAME}}",
+            "env": [
+              {
+                "name": "GCLOUD_PROJECT_ID",
+                "value": "{{CLOUDSDK_CORE_PROJECT}}"
+              },
+              {
+                "name": "GCLOUD_KEY",
+                "value": "{{GCLOUD_KEY}}"
+              }
+            ],
+            "ports": [
+              {
+                "containerPort": 8080
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
