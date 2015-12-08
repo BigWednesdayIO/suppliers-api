@@ -15,7 +15,7 @@ const preloadPostcodeData = () => {
 };
 
 module.exports.deleteTestData = kind => {
-  const query = dataset.createQuery(kind);
+  const query = dataset.createQuery(kind).select('__key__');
 
   return new Promise((resolve, reject) => {
     dataset.runQuery(query, (err, res) => {
