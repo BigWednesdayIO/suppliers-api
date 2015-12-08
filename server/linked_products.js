@@ -70,6 +70,34 @@ module.exports.register = (server, options, next) => {
 
   server.route({
     method: 'GET',
+    path: '/suppliers/{supplierId}/linked_products',
+    handler: (request, reply) => {
+      const query = datasetEntities.linkedProductQuery().limit(10);
+
+      DatastoreModel.find(query)
+        .then(reply)
+        .catch(err => {
+          console.error(err);
+          reply.badImplementation();
+        });
+    },
+    config: {
+      tags: ['api'],
+      validate: {
+        params: {
+          supplierId: Joi.string().required().description('Supplier identifier')
+        }
+      },
+      response: {
+        status: {
+          200: Joi.array().items(responseSchema).description('Linked products')
+        }
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
       DatastoreModel.get(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id))

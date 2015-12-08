@@ -45,7 +45,8 @@ before(() => preloadPostcodeData());
 
 afterEach(() => Promise.all([
   module.exports.deleteTestData('Supplier'),
-  module.exports.deleteTestData('Depot')
+  module.exports.deleteTestData('Depot'),
+  module.exports.deleteTestData('SupplierLinkedProduct')
 ]));
 
 after(() => module.exports.deleteTestData('Postcode'));
