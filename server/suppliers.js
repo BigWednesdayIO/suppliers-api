@@ -7,7 +7,7 @@ const request = require('request');
 
 const dataset = require('../lib/dataset');
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
-const Supplier = require('../lib/supplier');
+const supplierQueries = require('../lib/supplier_queries');
 
 const postcodesApi = `http://${process.env.POSTCODES_API_SVC_HOST}:${process.env.POSTCODES_API_SVC_PORT}`;
 
@@ -147,7 +147,7 @@ exports.register = function (server, options, next) {
     path: '/suppliers',
     handler: (request, reply) => {
       const get = request.pre.postcodeData ?
-        Supplier.findByDeliveryLocations(request.pre.postcodeData) :
+        supplierQueries.findByDeliveryLocations(request.pre.postcodeData) :
         DatastoreModel.find(dataset.supplierQuery());
 
       get.then(result => {
