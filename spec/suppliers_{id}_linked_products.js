@@ -89,25 +89,43 @@ describe('/suppliers/{id}/linked_products', () => {
           expect(response.result).to.deep.equal(expectedResults);
         }));
 
-    it('rejects with http 400 when hitsPerPage is not a number', () =>
-      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=test`, method: 'GET'})
-        .then(response => {
-          expect(response.statusCode).to.equal(400);
-          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be a number]');
-        }));
+    it('returns the requested page', () =>
+      Promise.all([
+        specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&page=1`, method: 'GET'}),
+        specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&page=2`, method: 'GET'}),
+        specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&page=3`, method: 'GET'}),
+        specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&page=4`, method: 'GET'}),
+        specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&page=5`, method: 'GET'})
+      ])
+      .then(_.spread((firstPage, secondPage, thirdPage, fourthPage, fifthPage) => {
+        expect(firstPage.result).to.deep.equal(createResponses.slice(0, 3).map(response => response.result));
+        expect(secondPage.result).to.deep.equal(createResponses.slice(3, 6).map(response => response.result));
+        expect(thirdPage.result).to.deep.equal(createResponses.slice(6, 9).map(response => response.result));
+        expect(fourthPage.result).to.deep.equal(createResponses.slice(9, 11).map(response => response.result));
+        expect(fifthPage.result).to.be.empty;
+      })));
 
-    it('rejects with http 400 when hitsPerPage is not an integer', () =>
-      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=1.5`, method: 'GET'})
-        .then(response => {
-          expect(response.statusCode).to.equal(400);
-          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be an integer]');
-        }));
+    ['hitsPerPage', 'page'].forEach(attribute => {
+      it(`rejects with http 400 when ${attribute} is not a number`, () =>
+        specRequest({url: `/suppliers/${supplierId}/linked_products?${attribute}=test`, method: 'GET'})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result).to.have.property('message', `child "${attribute}" fails because ["${attribute}" must be a number]`);
+          }));
 
-    it('rejects with http 400 when hitsPerPage is not above zero', () =>
-      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=0`, method: 'GET'})
-        .then(response => {
-          expect(response.statusCode).to.equal(400);
-          expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be larger than or equal to 1]');
-        }));
+      it(`rejects with http 400 when ${attribute} is not an integer`, () =>
+        specRequest({url: `/suppliers/${supplierId}/linked_products?${attribute}=1.5`, method: 'GET'})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result).to.have.property('message', `child "${attribute}" fails because ["${attribute}" must be an integer]`);
+          }));
+
+      it(`rejects with http 400 when ${attribute} is not above zero`, () =>
+        specRequest({url: `/suppliers/${supplierId}/linked_products?${attribute}=0`, method: 'GET'})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result).to.have.property('message', `child "${attribute}" fails because ["${attribute}" must be larger than or equal to 1]`);
+          }));
+    });
   });
 });
