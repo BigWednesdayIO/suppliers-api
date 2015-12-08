@@ -1,13 +1,14 @@
 'use strict';
 
 const _ = require('lodash');
+const cuid = require('cuid');
 const expect = require('chai').expect;
 
 const specRequest = require('./spec_request');
 const depotParameters = require('./parameters/depot');
 
 describe('/suppliers/{id}', () => {
-  const createSupplierPayload = {name: 'A Supplier'};
+  const createSupplierPayload = {name: 'A Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
 
   describe('get', () => {
     let createResponse;
@@ -38,7 +39,7 @@ describe('/suppliers/{id}', () => {
     });
 
     it('returns the supplier resource', () => {
-      const resource = _.clone(createSupplierPayload);
+      const resource = _.omit(createSupplierPayload, 'password');
       resource.id = createResponse.result.id;
 
       expect(getResponse.result).to.have.property('_metadata');
@@ -52,8 +53,8 @@ describe('/suppliers/{id}', () => {
 
   describe('put', () => {
     let updateResponse;
-    const createSupplierPayload = {name: 'A Supplier'};
-    const updatedSupplierPayload = {name: 'New name'};
+    const createSupplierPayload = {name: 'A Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
+    const updatedSupplierPayload = {name: 'New name', email: `${cuid()}@bigwednesday.io`};
 
     beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
@@ -89,7 +90,7 @@ describe('/suppliers/{id}', () => {
     });
 
     describe('validation', () => {
-      const putSupplierPayload = {name: 'supplier'};
+      const putSupplierPayload = {name: 'supplier', email: `${cuid()}@bigwednesday.io`};
 
       it('rejects id', () => {
         const payload = _.assign({id: 'SUP'}, putSupplierPayload);
@@ -98,6 +99,27 @@ describe('/suppliers/{id}', () => {
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('"id" is not allowed');
+          });
+      });
+
+      it('requires email', () => {
+        const payload = _.omit(putSupplierPayload, 'email');
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "email" fails because ["email" is required]');
+          });
+      });
+
+      it('requires correct email format', () => {
+        const payload = _.clone(putSupplierPayload);
+        payload.email = 'bigwednesday.io';
+
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "email" fails because ["email" must be a valid email]');
           });
       });
 
@@ -140,10 +162,10 @@ describe('/suppliers/{id}', () => {
     let supplier2;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
+      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
         .then(response => {
           supplier1 = response.result;
-          return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}});
+          return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}});
         })
         .then(response => {
           supplier2 = response.result;

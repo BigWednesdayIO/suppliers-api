@@ -2,11 +2,16 @@
 
 const _ = require('lodash');
 const bluebird = require('bluebird');
+const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
 describe('/suppliers', () => {
-  const createSupplierPayload = {name: 'A Supplier'};
+  const createSupplierPayload = {
+    name: 'A Supplier',
+    email: `${cuid()}@bigwednesday.io`,
+    password: '8u{F0*W1l5'
+  };
 
   describe('post', () => {
     let createResponse;
@@ -28,7 +33,7 @@ describe('/suppliers', () => {
     });
 
     it('returns the supplier resource', () => {
-      expect(_.omit(createResponse.result, '_metadata', 'id')).to.deep.equal(createSupplierPayload);
+      expect(_.omit(createResponse.result, '_metadata', 'id')).to.deep.equal(_.omit(createSupplierPayload, 'password'));
     });
 
     it('returns created resource location', () => {
@@ -36,6 +41,37 @@ describe('/suppliers', () => {
     });
 
     describe('validation', () => {
+      it('requires email', () => {
+        const payload = _.omit(createSupplierPayload, 'email');
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "email" fails because ["email" is required]');
+          });
+      });
+
+      it('requires correct email format', () => {
+        const payload = _.clone(createSupplierPayload);
+        payload.email = 'bigwednesday.io';
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "email" fails because ["email" must be a valid email]');
+          });
+      });
+
+      it('requires password', () => {
+        const payload = _.omit(createSupplierPayload, 'password');
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "password" fails because ["password" is required]');
+          });
+      });
+
       it('requires name', () => {
         const payload = _.omit(createSupplierPayload, 'name');
 
@@ -72,9 +108,9 @@ describe('/suppliers', () => {
 
   describe('get', () => {
     const suppliers = [
-      {name: 'Supplier A'},
-      {name: 'Supplier B'},
-      {name: 'Supplier C'}
+      {name: 'Supplier A', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'},
+      {name: 'Supplier B', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'},
+      {name: 'Supplier C', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}
     ];
     let createdSuppliers;
 
@@ -106,10 +142,10 @@ describe('/suppliers', () => {
         ])
         .then(responses => {
           const result1 = responses[0].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
-          expect(result1).to.deep.equal([suppliers[1]]);
+          expect(result1).to.deep.equal([_.omit(suppliers[1], 'password')]);
 
           const result2 = responses[1].result.map(supplier => _.omit(supplier, '_metadata', 'id'));
-          expect(result2).to.deep.equal([suppliers[1], suppliers[0]]);
+          expect(result2).to.deep.equal([_.omit(suppliers[1], 'password'), _.omit(suppliers[0], 'password')]);
         });
       });
 

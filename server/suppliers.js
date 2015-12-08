@@ -8,6 +8,7 @@ const request = require('request');
 const dataset = require('../lib/dataset');
 const datasetEntities = require('../lib/dataset_entities');
 const supplierQueries = require('../lib/supplier_queries');
+const supplierMapper = require('../lib/supplier_mapper');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
@@ -40,20 +41,18 @@ const getDeliveryPostcodeData = (req, reply) => {
   });
 };
 
-const supplierParametersSchema = Joi.object({
+const baseSupplierSchema = Joi.object({
+  email: Joi.string().email().required().description('Supplier email'),
   name: Joi.string().required().description('Supplier name')
-}).meta({
-  className: 'SupplierParameters'
 });
 
-const suppliersSchema = Joi.object({
+const suppliersSchema = baseSupplierSchema.concat(Joi.object({
   id: Joi.string().required().description('Supplier identifier'),
-  name: Joi.string().required().description('Supplier name'),
   _metadata: Joi.object({
     created: Joi.date().required().description('Date the supplier was created'),
     updated: Joi.date().required().description('Date the supplier was updated')
   }).meta({className: 'SupplierMetadata'})
-}).meta({
+})).meta({
   className: 'Supplier'
 });
 
@@ -63,13 +62,17 @@ exports.register = function (server, options, next) {
     path: '/suppliers',
     handler: (request, reply) => {
       DatastoreModel.insert(datasetEntities.supplierKey(cuid()), request.payload).then(supplier => {
-        reply(supplier).created(`/suppliers/${supplier.id}`);
+        reply(supplierMapper.toModel(supplier)).created(`/suppliers/${supplier.id}`);
       }, reply.error.bind(reply));
     },
     config: {
       tags: ['api'],
       validate: {
-        payload: supplierParametersSchema.description('The supplier to create')
+        payload: baseSupplierSchema.concat(Joi.object({
+          password: Joi.string().required().description('Supplier password')
+        })).meta({
+          className: 'SupplierCreateParameters'
+        }).description('The supplier to create')
       },
       response: {
         failAction: process.env.RESPONSE_FAIL_ACTION || 'log',
@@ -85,7 +88,9 @@ exports.register = function (server, options, next) {
     path: '/suppliers/{id}',
     handler: (request, reply) => {
       DatastoreModel.update(datasetEntities.supplierKey(request.params.id), request.payload)
-        .then(reply)
+        .then(supplier => {
+          reply(supplierMapper.toModel(supplier));
+        })
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
             return reply.notFound();
@@ -101,12 +106,13 @@ exports.register = function (server, options, next) {
         params: {
           id: Joi.string().required().description('Supplier identifier')
         },
-        payload: supplierParametersSchema.description('The supplier to update or create')
+        payload: baseSupplierSchema.meta({
+          className: 'SupplierUpdateParameters'
+        }).description('The supplier to update')
       },
       response: {
         failAction: process.env.RESPONSE_FAIL_ACTION || 'log',
         status: {
-          201: suppliersSchema.description('The created supplier'),
           200: suppliersSchema.description('The updated supplier')
         }
       }
@@ -118,7 +124,9 @@ exports.register = function (server, options, next) {
     path: '/suppliers/{id}',
     handler: (request, reply) => {
       DatastoreModel.get(datasetEntities.supplierKey(request.params.id))
-        .then(reply)
+        .then(supplier => {
+          reply(supplierMapper.toModel(supplier));
+        })
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
             return reply.notFound();
@@ -153,7 +161,7 @@ exports.register = function (server, options, next) {
         DatastoreModel.find(datasetEntities.supplierQuery());
 
       get.then(result => {
-        reply(result);
+        reply(result.map(supplierMapper.toModel));
       }, reply.error.bind(reply));
     },
     config: {

@@ -1,13 +1,14 @@
 'use strict';
 
 const _ = require('lodash');
+const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 
 const linkedProductParameters = require('./parameters/linked_product.js');
 
 describe('/suppliers/{id}/linked_products', () => {
-  const supplierPayload = {name: 'a supplier'};
+  const supplierPayload = {name: 'a supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
 
   describe('post', () => {
     let createResponse;
