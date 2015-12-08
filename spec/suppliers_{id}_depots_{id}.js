@@ -9,19 +9,20 @@ const depotParameters = require('./parameters/depot');
 describe('/suppliers/{id}/depots/{id}', () => {
   describe('put', () => {
     let updateResponse;
+    let createResponse;
+    let getUpdatedResponse;
     const updatePayload = _.assign(depotParameters(), {name: 'A new name'});
 
-    beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
+    beforeEach(() =>
+      specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
+        .then(response => specRequest({url: `${response.headers.location}/depots`, method: 'POST', payload: depotParameters()}))
         .then(response => {
-          const supplier = response.result;
-          return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'PUT', payload: depotParameters()})
-            .then(() => specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'PUT', payload: updatePayload}));
+          createResponse = response;
+          return specRequest({url: response.headers.location, method: 'PUT', payload: updatePayload});
         })
-        .then(response => {
-          updateResponse = response;
-        });
-    });
+        .then(response => updateResponse = response)
+        .then(() => specRequest({url: createResponse.headers.location, method: 'GET'}))
+        .then(response => getUpdatedResponse = response));
 
     it('returns http 404 when supplier does not exist', () => {
       return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: depotParameters()})
@@ -35,16 +36,25 @@ describe('/suppliers/{id}/depots/{id}', () => {
       expect(updateResponse.statusCode).to.equal(200);
     });
 
-    it('returns a depot resource', () => {
-      const resource = _.clone(updatePayload);
-      resource.id = '1';
+    it('returns the id', () => {
+      expect(updateResponse.result.id).to.equal(createResponse.result.id);
+    });
 
-      expect(updateResponse.result).to.have.property('_metadata');
-      expect(updateResponse.result._metadata).to.have.property('created');
-      expect(updateResponse.result._metadata.created).to.be.an.instanceOf(Date);
+    it('returns created date', () => {
+      expect(updateResponse.result._metadata.created).to.deep.equal(createResponse.result._metadata.created);
+    });
 
-      const result = _.omit(updateResponse.result, '_metadata');
-      expect(result).to.deep.equal(resource);
+    it('progresses the updated date', () => {
+      expect(updateResponse.result._metadata.updated).to.be.a('date');
+      expect(updateResponse.result._metadata.updated.toISOString()).to.be.above(createResponse.result._metadata.updated.toISOString());
+    });
+
+    it('returns the updated depot resource', () => {
+      expect(_.omit(updateResponse.result, '_metadata', 'id')).to.deep.equal(updatePayload);
+    });
+
+    it('persists the update', () => {
+      expect(getUpdatedResponse.result).to.deep.equal(updateResponse.result);
     });
 
     describe('validation', () => {
@@ -122,19 +132,20 @@ describe('/suppliers/{id}/depots/{id}', () => {
   describe('get', () => {
     let supplier;
     let getResponse;
+    let createResponse;
     const depot = depotParameters();
 
-    beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
+    beforeEach(() =>
+      specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
         .then(response => {
           supplier = response.result;
-          return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'PUT', payload: depot});
+          return specRequest({url: `${response.headers.location}/depots`, method: 'POST', payload: depot});
         })
-        .then(() => specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'GET'}))
         .then(response => {
-          getResponse = response;
-        });
-    });
+          createResponse = response;
+          return specRequest({url: response.headers.location, method: 'GET'});
+        })
+        .then(response => getResponse = response));
 
     it('returns http 404 when supplier does not exist', () => {
       return specRequest({url: '/suppliers/123/depots/1', method: 'GET'})
@@ -155,28 +166,31 @@ describe('/suppliers/{id}/depots/{id}', () => {
       expect(getResponse.statusCode).to.equal(200);
     });
 
-    it('returns the depot resource', () => {
-      const resource = _.clone(depot);
-      resource.id = '1';
+    it('returns the depot id', () => {
+      expect(getResponse.result.id).to.equal(createResponse.result.id);
+    });
 
-      expect(getResponse.result).to.have.property('_metadata');
-      expect(getResponse.result._metadata).to.have.property('created');
-      expect(getResponse.result._metadata.created).to.be.an.instanceOf(Date);
+    it('returns created and updated dates', () => {
+      expect(getResponse.result._metadata.created).to.deep.equal(createResponse.result._metadata.created);
+      expect(getResponse.result._metadata.updated).to.deep.equal(createResponse.result._metadata.updated);
+    });
 
-      const result = _.omit(getResponse.result, '_metadata');
-      expect(result).to.deep.equal(resource);
+    it('returns the resource', () => {
+      expect(_.omit(getResponse.result, '_metadata', 'id')).to.deep.equal(depotParameters());
     });
   });
 
   describe('delete', () => {
     let supplier;
+    let createResponse;
 
     beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier'}})
         .then(response => {
           supplier = response.result;
-          return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'PUT', payload: depotParameters()});
-        });
+          return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: depotParameters()});
+        })
+        .then(response => createResponse = response);
     });
 
     it('returns http 404 when supplier does not exist', () => {
@@ -193,7 +207,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
     });
 
     it('returns http 204', () => {
-      return specRequest({url: `/suppliers/${supplier.id}/depots/1`, method: 'DELETE'})
+      return specRequest({url: createResponse.headers.location, method: 'DELETE'})
         .then(response => expect(response.statusCode).to.equal(204));
     });
   });

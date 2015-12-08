@@ -4,12 +4,12 @@ module.exports = function (grunt) {
   require('load-grunt-tasks')(grunt);
 
   grunt.initConfig({
-    app: ['./*.js', './lib/**/*.js'],
-    app_routes: ['./lib/routes/**/*.js'],
+    api: ['./index.js', './server/**/*.js'],
+    modules: ['./lib/**/*.js'],
     tests: ['./test/**/*.js'],
     specs: ['./spec/**/*.js'],
     eslint: {
-      target: ['<%= app %>', '<%= tests %>', '<%= specs %>']
+      target: ['./*.js', '<%= api %>', '<%= modules %>', '<%= tests %>', '<%= specs %>']
     },
     env: {
       test: {
@@ -33,12 +33,12 @@ module.exports = function (grunt) {
       }
     },
     watch: {
-      app: {
-        files: ['<%= app %>', '<%= tests %>'],
+      tests: {
+        files: ['<%= modules %>', '<%= tests %>'],
         tasks: ['lint', 'test']
       },
       specs: {
-        files: ['<%= specs %>', '<%= app %>', '<%= app_routes %>'],
+        files: ['<%= api %>', '<%= specs %>'],
         tasks: ['lint', 'spec']
       }
     },
@@ -50,6 +50,5 @@ module.exports = function (grunt) {
   grunt.registerTask('lint', 'eslint');
   grunt.registerTask('test', ['env:test', 'mochaTest:test']);
   grunt.registerTask('spec', ['env:test', 'mochaTest:spec']);
-  grunt.registerTask('ci', ['retire', 'default']);
   grunt.registerTask('default', ['lint', 'test', 'spec']);
 };

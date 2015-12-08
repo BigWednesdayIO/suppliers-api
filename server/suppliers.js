@@ -1,12 +1,15 @@
 'use strict';
 
-const _ = require('lodash');
 const Boom = require('boom');
+const cuid = require('cuid');
 const Joi = require('joi');
 const request = require('request');
 
-const Supplier = require('../models/supplier');
-const SupplierDepot = require('../models/supplier_depot');
+const dataset = require('../lib/dataset');
+const datasetEntities = require('../lib/dataset_entities');
+const supplierQueries = require('../lib/supplier_queries');
+
+const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
 const postcodesApi = `http://${process.env.POSTCODES_API_SVC_HOST}:${process.env.POSTCODES_API_SVC_PORT}`;
 
@@ -47,7 +50,8 @@ const suppliersSchema = Joi.object({
   id: Joi.string().required().description('Supplier identifier'),
   name: Joi.string().required().description('Supplier name'),
   _metadata: Joi.object({
-    created: Joi.date().required().description('Date the supplier was created')
+    created: Joi.date().required().description('Date the supplier was created'),
+    updated: Joi.date().required().description('Date the supplier was updated')
   }).meta({className: 'SupplierMetadata'})
 }).meta({
   className: 'Supplier'
@@ -58,7 +62,7 @@ exports.register = function (server, options, next) {
     method: 'POST',
     path: '/suppliers',
     handler: (request, reply) => {
-      Supplier.create(request.payload).then(supplier => {
+      DatastoreModel.insert(datasetEntities.supplierKey(cuid()), request.payload).then(supplier => {
         reply(supplier).created(`/suppliers/${supplier.id}`);
       }, reply.error.bind(reply));
     },
@@ -80,8 +84,16 @@ exports.register = function (server, options, next) {
     method: 'PUT',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      Supplier.update(request.params.id, request.payload)
-        .then(supplier => reply(supplier || Boom.notFound()), reply.error.bind(reply));
+      DatastoreModel.update(datasetEntities.supplierKey(request.params.id), request.payload)
+        .then(reply)
+        .catch(err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
+          }
+
+          console.error(err);
+          reply.error(err);
+        });
     },
     config: {
       tags: ['api'],
@@ -105,9 +117,16 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      Supplier.get(request.params.id).then(supplier => {
-        reply(supplier || Boom.notFound());
-      }, reply.error.bind(reply));
+      DatastoreModel.get(datasetEntities.supplierKey(request.params.id))
+        .then(reply)
+        .catch(err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
+          }
+
+          console.error(err);
+          reply.error(err);
+        });
     },
     config: {
       tags: ['api'],
@@ -129,10 +148,12 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers',
     handler: (request, reply) => {
-      const get = request.pre.postcodeData ? Supplier.findByDeliveryLocations(request.pre.postcodeData) : Supplier.find();
+      const get = request.pre.postcodeData ?
+        supplierQueries.findByDeliveryLocations(request.pre.postcodeData) :
+        DatastoreModel.find(datasetEntities.supplierQuery());
 
-      get.then(suppliers => {
-        reply(suppliers);
+      get.then(result => {
+        reply(result);
       }, reply.error.bind(reply));
     },
     config: {
@@ -156,22 +177,26 @@ exports.register = function (server, options, next) {
     method: 'DELETE',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      Promise.all([
-        Supplier.get(request.params.id),
-        SupplierDepot.find(request.params.id)
-      ])
-      .then(_.spread((supplier, depots) => {
-        if (!supplier) {
-          return reply(Boom.notFound());
-        }
+      const hasDepotsQuery = datasetEntities.depotQuery().hasAncestor(datasetEntities.supplierKey(request.params.id));
 
-        if (depots.length) {
-          return reply(Boom.conflict(`Supplier "${request.params.id}" has associated depots, which must be deleted first.`));
-        }
+      DatastoreModel.find(hasDepotsQuery)
+        .then(depots => {
+          if (depots.length) {
+            return reply(Boom.conflict(`Supplier "${request.params.id}" has associated depots, which must be deleted first.`));
+          }
 
-        Supplier.delete(request.params.id)
-          .then(() => reply().code(204), reply.error.bind(reply));
-      }));
+          return DatastoreModel.delete(datasetEntities.supplierKey(request.params.id))
+            .then(() => reply().code(204))
+            .catch(err => {
+              if (err.name === 'EntityNotFoundError') {
+                return reply.notFound();
+              }
+
+              console.error(err);
+              reply.error(err);
+            });
+        })
+        .catch(reply.error.bind(reply));
     },
     config: {
       tags: ['api'],

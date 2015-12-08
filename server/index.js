@@ -7,9 +7,13 @@ const Package = require('../package.json');
 const plugins = [{
   register: require('hapi-version-route')
 }, {
-  register: require('./routes/suppliers')
+  register: require('hapi-boom-decorators')
 }, {
-  register: require('./routes/depots')
+  register: require('./suppliers')
+}, {
+  register: require('./depots')
+}, {
+  register: require('./linked_products')
 }, {
   register: Swaggered,
   options: {
@@ -22,7 +26,17 @@ const plugins = [{
 }];
 
 module.exports = callback => {
-  const server = new Hapi.Server();
+  const server = new Hapi.Server({
+    connections: {
+      routes: {
+        validate: {
+          options: {
+            convert: false
+          }
+        }
+      }
+    }
+  });
 
   server.connection({port: 8080});
 

@@ -4,7 +4,7 @@ const _ = require('lodash');
 
 module.exports = function (options) {
   return new Promise((resolve, reject) => {
-    require('../lib/server')((err, server) => {
+    require('../server')((err, server) => {
       if (err) {
         return reject(err);
       }

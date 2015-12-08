@@ -147,7 +147,7 @@ describe('/suppliers/{id}', () => {
         })
         .then(response => {
           supplier2 = response.result;
-          return specRequest({url: `/suppliers/${supplier2.id}/depots/1`, method: 'PUT', payload: depotParameters()});
+          return specRequest({url: `/suppliers/${supplier2.id}/depots`, method: 'POST', payload: depotParameters()});
         });
     });
 

@@ -1,24 +1,25 @@
 'use strict';
 
 const Boom = require('boom');
+const cuid = require('cuid');
 const Joi = require('joi');
 
-const Supplier = require('../models/supplier');
-const SupplierDepot = require('../models/supplier_depot');
+const dataset = require('../lib/dataset');
+const datasetEntities = require('../lib/dataset_entities');
+const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
-const verifySupplier = param => {
-  return (request, reply) => {
-    const supplierId = request.params[param || 'id'];
+const verifySupplier = (request, reply) => {
+  const supplierId = request.params.supplierId;
 
-    Supplier.get(supplierId)
-      .then(supplier => {
-        if (!supplier) {
-          return reply.supplierNotFound(supplierId);
-        }
+  DatastoreModel.get(datasetEntities.supplierKey(supplierId))
+    .then(() => reply(), err => {
+      if (err.name === 'EntityNotFoundError') {
+        return reply.supplierNotFound(supplierId);
+      }
 
-        reply();
-      });
-  };
+      console.error(err);
+      reply.badImplementation();
+    });
 };
 
 const baseSchema = {
@@ -37,7 +38,8 @@ const depotParametersSchema = Joi.object(baseSchema).meta({
 const depotSchema = Joi.object(Object.assign({
   id: Joi.string().required().description('Depot identifier'),
   _metadata: Joi.object({
-    created: Joi.date().required().description('Date the depot was created')
+    created: Joi.date().required().description('Date the depot was created'),
+    updated: Joi.date().required().description('Date the depot was updated')
   }).meta({className: 'DepotMetadata'})}, baseSchema)
 ).meta({
   className: 'Depot'
@@ -50,18 +52,18 @@ exports.register = function (server, options, next) {
 
   server.route({
     method: 'GET',
-    path: '/suppliers/{id}/depots',
+    path: '/suppliers/{supplierId}/depots',
     handler: (request, reply) => {
-      SupplierDepot.find(request.params.id).then(depots => {
-        reply(depots);
-      }, reply.error.bind(reply));
+      const query = datasetEntities.depotQuery().hasAncestor(datasetEntities.supplierKey(request.params.supplierId));
+      DatastoreModel.find(query)
+        .then(reply, reply.error.bind(reply));
     },
     config: {
       tags: ['api'],
-      pre: [{method: verifySupplier()}],
+      pre: [{method: verifySupplier}],
       validate: {
         params: {
-          id: Joi.string().required().description('Supplier identifier')
+          supplierId: Joi.string().required().description('Supplier identifier')
         }
       },
       response: {
@@ -77,13 +79,19 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers/{supplierId}/depots/{id}',
     handler: (request, reply) => {
-      SupplierDepot.get(request.params.supplierId, request.params.id).then(depot => {
-        reply(depot || Boom.notFound());
-      }, reply.error.bind(reply));
+      DatastoreModel.get(datasetEntities.depotKey(request.params.supplierId, request.params.id))
+        .then(reply)
+        .catch(err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
+          }
+
+          reply.error(err);
+        });
     },
     config: {
       tags: ['api'],
-      pre: [{method: verifySupplier('supplierId')}],
+      pre: [{method: verifySupplier}],
       validate: {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier'),
@@ -101,18 +109,18 @@ exports.register = function (server, options, next) {
 
   server.route({
     method: 'POST',
-    path: '/suppliers/{id}/depots',
+    path: '/suppliers/{supplierId}/depots',
     handler: (request, reply) => {
-      SupplierDepot.create(request.params.id, request.payload).then(depot => {
-        reply(depot).created(`/suppliers/${request.params.id}/depots/${depot.id}`);
-      }, reply.error.bind(reply));
+      DatastoreModel.insert(datasetEntities.depotKey(request.params.supplierId, cuid()), request.payload)
+        .then(depot => reply(depot).created(`/suppliers/${request.params.supplierId}/depots/${depot.id}`))
+        .catch(reply.error.bind(reply));
     },
     config: {
       tags: ['api'],
-      pre: [{method: verifySupplier()}],
+      pre: [{method: verifySupplier}],
       validate: {
         params: {
-          id: Joi.string().required().description('Supplier identifier')
+          supplierId: Joi.string().required().description('Supplier identifier')
         },
         payload: depotParametersSchema.description('The depot to create')
       },
@@ -129,18 +137,19 @@ exports.register = function (server, options, next) {
     method: 'PUT',
     path: '/suppliers/{supplierId}/depots/{id}',
     handler: (request, reply) => {
-      SupplierDepot.upsert(request.params.supplierId, request.params.id, request.payload)
-        .then(depot => {
-          const response = reply(depot);
-
-          if (depot._inserted) {
-            response.created(`/suppliers/${request.params.supplierId}/depots/${depot.id}`);
+      DatastoreModel.update(datasetEntities.depotKey(request.params.supplierId, request.params.id), request.payload)
+        .then(reply)
+        .catch(err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
           }
+
+          reply.error(err);
         });
     },
     config: {
       tags: ['api'],
-      pre: [{method: verifySupplier('supplierId')}],
+      pre: [{method: verifySupplier}],
       validate: {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier'),
@@ -162,19 +171,19 @@ exports.register = function (server, options, next) {
     method: 'DELETE',
     path: '/suppliers/{supplierId}/depots/{id}',
     handler: (request, reply) => {
-      SupplierDepot.get(request.params.supplierId, request.params.id)
-        .then(depot => {
-          if (!depot) {
-            return reply(Boom.notFound());
+      DatastoreModel.get(datasetEntities.depotKey(request.params.supplierId, request.params.id))
+        .then(() => reply().code(204))
+        .catch(err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
           }
 
-          SupplierDepot.delete(request.params.supplierId, request.params.id)
-            .then(() => reply().code(204), reply.error.bind(reply));
+          reply.error(err);
         });
     },
     config: {
       tags: ['api'],
-      pre: [{method: verifySupplier('supplierId')}],
+      pre: [{method: verifySupplier}],
       validate: {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier'),
