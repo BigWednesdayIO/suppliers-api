@@ -115,7 +115,7 @@ describe('Supplier store', () => {
         });
     });
 
-    it('returns customer attributes', () => {
+    it('returns supplier attributes', () => {
       const attributeParams = _.omit(createParams, 'password');
       const createdAttributes = _.omit(created, ['id', '_metadata']);
       expect(createdAttributes).to.eql(_.assign(attributeParams, {_hidden: {auth0Id: fakeAuth0Id}}));
@@ -189,9 +189,61 @@ describe('Supplier store', () => {
       sinon.assert.calledWith(updateUserEmailStub, fakeAuth0Id, updateParams.email, true);
     });
 
-    it('errors on non-existent customer', () => {
+    it('errors on non-existent supplier', () => {
       return supplierStore
         .update(entities.supplierKey('unkown-supplier'), updateParams)
+        .then(() => {
+          throw new Error('Error expected');
+        }, err => {
+          expect(err.name).to.equal('EntityNotFoundError');
+          expect(err instanceof Error).to.equal(true);
+        });
+    });
+  });
+
+  describe('delete', () => {
+    let deleteStub;
+
+    beforeEach(() => {
+      sandbox.stub(datastoreModel.constructor.prototype, 'get', key => {
+        if (_.eq(key, supplierKey)) {
+          return Promise.resolve({_hidden: {auth0Id: fakeAuth0Id}});
+        }
+
+        const error = new Error();
+        error.name = 'EntityNotFoundError';
+        return Promise.reject(error);
+      });
+
+      deleteStub = sandbox.stub(datastoreModel.constructor.prototype, 'delete', key => {
+        if (_.eq(key, supplierKey)) {
+          return Promise.resolve();
+        }
+
+        const error = new Error();
+        error.name = 'EntityNotFoundError';
+        return Promise.reject(error);
+      });
+
+      return supplierStore.delete(supplierKey);
+    });
+
+    it('persists deletion', () => {
+      sinon.assert.calledOnce(deleteStub);
+      sinon.assert.calledWith(deleteStub, sinon.match(supplierKey));
+    });
+
+    it('removes user from auth0', () => {
+      sinon.assert.calledOnce(deleteUserStub);
+      sinon.assert.calledWith(
+        deleteUserStub,
+        sinon.match(fakeAuth0Id)
+      );
+    });
+
+    it('errors on non-existent supplier', () => {
+      return supplierStore
+        .delete(entities.supplierKey('unkown-supplier'))
         .then(() => {
           throw new Error('Error expected');
         }, err => {
