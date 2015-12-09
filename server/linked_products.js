@@ -1,12 +1,32 @@
 'use strict';
 
+const _ = require('lodash');
 const cuid = require('cuid');
 const Joi = require('joi');
+const request = require('request');
 
 const dataset = require('../lib/dataset');
 const datasetEntities = require('../lib/dataset_entities');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
+
+const productsApi = `http://${process.env.PRODUCTS_API_SVC_HOST}:${process.env.PRODUCTS_API_SVC_PORT}`;
+
+const getProductData = ids =>
+  new Promise((resolve, reject) => {
+    const idsQuery = `id[]=${ids.join('&id[]=')}`;
+    request({url: `${productsApi}/products?${idsQuery}`}, (err, response, body) => {
+      if (err) {
+        return reject(err);
+      }
+
+      if (response.statusCode === 200) {
+        resolve(JSON.parse(body));
+      }
+
+      reject(new Error(`Products API error response [${response.statusCode}]. ${body}`));
+    });
+  });
 
 const verifySupplier = (request, reply) => {
   const supplierId = request.params.supplierId;
@@ -23,16 +43,19 @@ const verifySupplier = (request, reply) => {
 };
 
 const linkedProductsAttributes = {
-  product_id: Joi.string().required().description('The product identifier'),
   product_code: Joi.string().description('The supplier\'s product code or identifier'),
   price: Joi.number().precision(2).min(0.01).required().description('The base price for the supplier'),
   was_price: Joi.number().precision(2).min(0.01).required().description('The previous price for the supplier')
 };
 
-const requestSchema = Joi.object(linkedProductsAttributes).meta({className: 'LinkedProductParameters'});
+const requestSchema = Joi.object(Object.assign({
+  product_id: Joi.string().required().description('The product identifier')
+}, linkedProductsAttributes)).meta({className: 'LinkedProductParameters'});
 
 const responseSchema = Joi.object(Object.assign({
   id: Joi.string().required().description('The linked product identifier'),
+  product_id: Joi.string().when('product', {is: null, then: Joi.required()}).description('The product identifier'),
+  product: Joi.object().meta({className: 'Product'}).description('The expanded associated product resource'),
   _metadata: Joi.object({
     created: Joi.date().required().description('Date the linked product was created'),
     updated: Joi.date().required().description('Date the linked product was updated')
@@ -79,11 +102,31 @@ module.exports.register = (server, options, next) => {
       const limit = request.query.hitsPerPage || 10;
       const page = request.query.page || 1;
       const offset = page === 1 ? 0 : (page - 1) * limit;
+      const expandProducts = request.query.expand.indexOf('product') >= 0;
 
       const query = datasetEntities.linkedProductQuery().offset(offset).limit(limit);
 
       DatastoreModel.find(query)
-        .then(reply)
+        .then(linkedProducts => {
+          if (expandProducts) {
+            return getProductData(linkedProducts.map(p => p.product_id))
+              .then(products => Promise.resolve([linkedProducts, products]));
+          }
+
+          return Promise.resolve([linkedProducts]);
+        })
+        .then(_.spread((linkedProducts, products) => {
+          if (expandProducts) {
+            const results = linkedProducts.map(linkedProduct => {
+              const product = products.find(p => p.id === linkedProduct.product_id);
+              return product ? Object.assign(_.omit(linkedProduct, 'product_id'), {product}) : linkedProduct;
+            });
+
+            return reply(results);
+          }
+
+          reply(linkedProducts);
+        }))
         .catch(err => {
           console.error(err);
           reply.badImplementation();
@@ -97,7 +140,8 @@ module.exports.register = (server, options, next) => {
         },
         query: {
           hitsPerPage: Joi.number().integer().min(1).max(50).description('Number of products to return for a page'),
-          page: Joi.number().integer().min(1).description('The page number to return')
+          page: Joi.number().integer().min(1).description('The page number to return'),
+          expand: Joi.array().items(Joi.string().valid('product')).default([]).description('Associated resources to expand')
         }
       },
       response: {

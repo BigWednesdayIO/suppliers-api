@@ -105,6 +105,16 @@ describe('/suppliers/{id}/linked_products', () => {
         expect(fifthPage.result).to.be.empty;
       })));
 
+    it('returns the product resource when expanded', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&expand[]=product`, method: 'GET'})
+        .then(response => {
+          response.result.forEach(result => {
+            expect(result).to.have.property('product');
+            expect(result.product).to.be.an('object');
+            expect(result).to.not.have.property('product_id');
+          });
+        }));
+
     ['hitsPerPage', 'page'].forEach(attribute => {
       it(`rejects with http 400 when ${attribute} is not a number`, () =>
         specRequest({url: `/suppliers/${supplierId}/linked_products?${attribute}=test`, method: 'GET'})
@@ -133,6 +143,20 @@ describe('/suppliers/{id}/linked_products', () => {
         .then(response => {
           expect(response.statusCode).to.equal(400);
           expect(response.result).to.have.property('message', 'child "hitsPerPage" fails because ["hitsPerPage" must be less than or equal to 50]');
+        }));
+
+    it('rejects with http 400 when expand is not an array', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&expand=product`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "expand" fails because ["expand" must be an array]');
+        }));
+
+    it('rejects with http 400 when expand contains anything that is not "product"', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3&expand[]=test`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "expand" fails because ["expand" at position 0 fails because ["0" must be one of [product]]]');
         }));
   });
 });

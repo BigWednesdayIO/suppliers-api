@@ -14,6 +14,15 @@ const preloadPostcodeData = () => {
   });
 };
 
+const preloadProductData = () => {
+  const entities = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(i =>
+    ({key: dataset.key(['Product', i.toString()]), data: {name: 'test product', price: 5, _metadata_created: new Date(), _metadata_updated: new Date()}}));
+
+  return new Promise((resolve, reject) => {
+    dataset.save(entities, err => err ? reject(err) : resolve());
+  });
+};
+
 module.exports.deleteTestData = kind => {
   const query = dataset.createQuery(kind).select('__key__');
 
@@ -41,7 +50,10 @@ module.exports.deleteTestData = kind => {
   });
 };
 
-before(() => preloadPostcodeData());
+before(() => Promise.all([
+  preloadPostcodeData(),
+  preloadProductData()
+]));
 
 afterEach(() => Promise.all([
   module.exports.deleteTestData('Supplier'),
@@ -49,4 +61,7 @@ afterEach(() => Promise.all([
   module.exports.deleteTestData('SupplierLinkedProduct')
 ]));
 
-after(() => module.exports.deleteTestData('Postcode'));
+after(() => Promise.all([
+  module.exports.deleteTestData('Postcode'),
+  module.exports.deleteTestData('Product')
+]));
