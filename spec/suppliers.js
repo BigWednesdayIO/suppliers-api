@@ -5,18 +5,22 @@ const bluebird = require('bluebird');
 const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
+const auth0Stubber = require('./auth0_stubber');
 
 describe('/suppliers', () => {
-  const createSupplierPayload = {
-    name: 'A Supplier',
-    email: `${cuid()}@bigwednesday.io`,
-    password: '8u{F0*W1l5'
-  };
+  let createSupplierPayload;
 
   describe('post', () => {
     let createResponse;
 
     beforeEach(() => {
+      auth0Stubber.disable();
+      createSupplierPayload = {
+        name: 'A Supplier',
+        email: `${cuid()}@bigwednesday.io`,
+        password: '8u{F0*W1l5'
+      };
+
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
           createResponse = response;

@@ -80,8 +80,10 @@ afterEach(() => {
   ]);
 });
 
+const deleteUser = id => bluebird.fromCallback(callback => auth0.deleteUser(id, callback));
+
 after(function () {
-  this.timeout(5000);
+  this.timeout(50000);
   const nockCallObjects = nock.recorder.play();
   const createdInAuth0 = _(nockCallObjects)
     .filter({
@@ -93,9 +95,19 @@ after(function () {
     .map(r => r.response.user_id)
     .value();
 
-  return bluebird.mapSeries(createdInAuth0, id => bluebird.fromCallback(callback => auth0.deleteUser(id, callback)))
-    .then(() => Promise.all([
-      module.exports.deleteTestData('Postcode'),
-      module.exports.deleteTestData('Product')
-    ]));
+  return Promise.all([
+    module.exports.deleteTestData('Postcode'),
+    module.exports.deleteTestData('Product')
+  ])
+  .then(() => {
+    let p = Promise.resolve();
+    createdInAuth0.forEach(id => {
+      p = p.then(() => deleteUser(id))
+        .catch(() => {
+          // Sometimes auth0 may not have finished indexing the user
+          return bluebird.delay(1000).then(() => deleteUser(id));
+        });
+    });
+    return p;
+  });
 });
