@@ -8,13 +8,15 @@ const dataset = require('../lib/dataset');
 const entities = require('../lib/dataset_entities');
 const auth0Client = require('../lib/auth0_client');
 const supplierStore = require('../lib/supplier_store');
+const datastoreModel = require('gcloud-datastore-model')(dataset);
 
 describe('Supplier store', () => {
   const supplierKey = entities.supplierKey('supplier-a');
   const fakeAuth0Id = 'auth0|987654321';
 
   let sandbox;
-  let saveStub;
+  let insertStub;
+  let updateStub;
   let createUserStub;
   let deleteUserStub;
   let updateUserEmailStub;
@@ -22,11 +24,18 @@ describe('Supplier store', () => {
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
 
-    saveStub = sandbox.stub(dataset, 'save', (args, callback) => {
-      if (args.data.email === 'fail_to_persist@bigwednesday.io') {
-        return callback('Cannot save');
+    insertStub = sandbox.stub(datastoreModel.constructor.prototype, 'insert', (key, body) => {
+      if (body.email === 'fail_to_persist@bigwednesday.io') {
+        return Promise.reject('Cannot save');
       }
-      callback();
+      return Promise.resolve(body);
+    });
+
+    updateStub = sandbox.stub(datastoreModel.constructor.prototype, 'update', (key, body) => {
+      if (body.email === 'fail_to_persist@bigwednesday.io') {
+        return Promise.reject('Cannot save');
+      }
+      return Promise.resolve(body);
     });
 
     createUserStub = sandbox.stub(auth0Client, 'createUser', (params, callback) => {
@@ -81,21 +90,15 @@ describe('Supplier store', () => {
     });
 
     it('persists supplier', () => {
-      sinon.assert.calledOnce(saveStub);
-      sinon.assert.calledWith(saveStub, sinon.match({
-        key: supplierKey,
-        method: 'insert',
-        data: {
-          email: createParams.email,
-          _hidden: {auth0Id: fakeAuth0Id}
-        }
+      sinon.assert.calledOnce(insertStub);
+      sinon.assert.calledWith(insertStub, sinon.match(supplierKey), sinon.match({
+        email: createParams.email,
+        _hidden: {auth0Id: fakeAuth0Id}
       }));
     });
 
     it('does not persist password', () => {
-      sinon.assert.calledWith(saveStub, sinon.match(value => {
-        return !value.data.hasOwnProperty('password');
-      }));
+      sinon.assert.calledWith(insertStub, sinon.match.any, sinon.match(body => !body.hasOwnProperty('password')));
     });
 
     it('does not return password', () => {
@@ -155,19 +158,14 @@ describe('Supplier store', () => {
     };
 
     beforeEach(() => {
-      sandbox.stub(dataset, 'get', (args, callback) => {
-        if (_.eq(args, supplierKey)) {
-          return callback(null, {
-            key: {path: supplierKey},
-            data: Object.assign({
-              _hidden: {auth0Id: fakeAuth0Id},
-              _metadata_created: existingSupplier._metadata.created,
-              _metadata_updated: existingSupplier._metadata.updated
-            }, _.omit(existingSupplier, ['id', '_metadata']))
-          });
+      sandbox.stub(datastoreModel.constructor.prototype, 'get', key => {
+        if (_.eq(key, supplierKey)) {
+          return Promise.resolve(Object.assign({_hidden: {auth0Id: fakeAuth0Id}}, _.omit(existingSupplier, 'id')));
         }
 
-        callback();
+        const error = new Error();
+        error.name = 'EntityNotFoundError';
+        return Promise.reject(error);
       });
 
       return supplierStore
@@ -178,12 +176,8 @@ describe('Supplier store', () => {
     });
 
     it('persists updated attributes', () => {
-      sinon.assert.calledOnce(saveStub);
-      sinon.assert.calledWith(saveStub, sinon.match({
-        key: supplierKey,
-        method: 'update',
-        data: updateParams
-      }));
+      sinon.assert.calledOnce(updateStub);
+      sinon.assert.calledWith(updateStub, sinon.match(supplierKey), sinon.match(_.assign(updateParams, {_hidden: {auth0Id: fakeAuth0Id}})));
     });
 
     it('returns updated resource', () => {
