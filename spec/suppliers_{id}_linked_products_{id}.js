@@ -44,6 +44,14 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
       expect(_.omit(getResponse.result, '_metadata', 'id')).to.deep.equal(linkedProductParameters);
     });
 
+    it('returns the associated product when expanded', () =>
+      specRequest({url: `${createResponse.headers.location}?expand[]=product`, method: 'GET'})
+        .then(response => {
+          expect(response.result).to.have.property('product');
+          expect(response.result.product).to.be.an('object');
+          expect(response.result).to.not.have.property('product_id');
+        }));
+
     it('returns http 404 when supplier does not exist', () =>
       specRequest({url: '/suppliers/abc/linked_products/1', method: 'GET'})
         .then(response => {
@@ -54,6 +62,20 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     it('returns http 404 when linked product does not exist', () =>
       specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'GET'})
         .then(response => expect(response.statusCode).to.equal(404)));
+
+    it('rejects with http 400 when expand is not an array', () =>
+      specRequest({url: `${createResponse.headers.location}?expand=product`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "expand" fails because ["expand" must be an array]');
+        }));
+
+    it('rejects with http 400 when expand contains anything that is not "product"', () =>
+      specRequest({url: `${createResponse.headers.location}?expand[]=test`, method: 'GET'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', 'child "expand" fails because ["expand" at position 0 fails because ["0" must be one of [product]]]');
+        }));
   });
 
   describe('put', () => {

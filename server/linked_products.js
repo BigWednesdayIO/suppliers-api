@@ -156,8 +156,20 @@ module.exports.register = (server, options, next) => {
     method: 'GET',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
+      const expandProduct = request.query.expand.indexOf('product') >= 0;
+
       DatastoreModel.get(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id))
-        .then(reply)
+        .then(linkedProduct => {
+          if (expandProduct) {
+            return getProductData([linkedProduct.product_id])
+              .then(products => Promise.resolve([linkedProduct, products.length ? products[0] : null]));
+          }
+
+          return Promise.resolve([linkedProduct, null]);
+        })
+        .then(_.spread((linkedProduct, product) =>
+          reply(expandProduct && product ? Object.assign(_.omit(linkedProduct, 'product_id'), {product}) : linkedProduct)
+        ))
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
             return reply.notFound();
@@ -174,6 +186,9 @@ module.exports.register = (server, options, next) => {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier'),
           id: Joi.string().required().description('Linked product identifier')
+        },
+        query: {
+          expand: Joi.array().items(Joi.string().valid('product')).default([]).description('Associated resources to expand')
         }
       },
       response: {
