@@ -25,7 +25,7 @@ dependencies:
 
 test:
   override:
-    - echo "export AUTH0_DOMAIN=${AUTH0_DOMAIN} \n export AUTHO_CLIENT_ID=${AUTHO_CLIENT_ID_DEV} \n export AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET_DEV} \n export AUTH0_CONNECTION=${AUTH0_CONNECTION_DEV}" > .env
+    - echo -e "AUTH0_DOMAIN=${AUTH0_DOMAIN}\nAUTHO_CLIENT_ID=${AUTHO_CLIENT_ID_DEV}\nAUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET_DEV}\nAUTH0_CONNECTION=${AUTH0_CONNECTION_DEV}" > .env
     - docker-compose run api npm run ci
 
 deployment:
