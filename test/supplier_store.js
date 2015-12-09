@@ -5,19 +5,22 @@ const expect = require('chai').expect;
 const sinon = require('sinon');
 
 const dataset = require('../lib/dataset');
+const entities = require('../lib/dataset_entities');
 const auth0Client = require('../lib/auth0_client');
 const supplierStore = require('../lib/supplier_store');
 
 describe('Supplier store', () => {
-  const fakeCreatedTimestamp = 1448450346461;
+  const supplierKey = entities.supplierKey('supplier-a');
+  const fakeAuth0Id = 'auth0|987654321';
+
   let sandbox;
   let saveStub;
   let createUserStub;
   let deleteUserStub;
+  let updateUserEmailStub;
 
   beforeEach(() => {
     sandbox = sinon.sandbox.create();
-    sandbox.useFakeTimers(fakeCreatedTimestamp);
 
     saveStub = sandbox.stub(dataset, 'save', (args, callback) => {
       if (args.data.email === 'fail_to_persist@bigwednesday.io') {
@@ -47,6 +50,10 @@ describe('Supplier store', () => {
     deleteUserStub = sandbox.stub(auth0Client, 'deleteUser', (id, callback) => {
       callback();
     });
+
+    updateUserEmailStub = sandbox.stub(auth0Client, 'updateUserEmail', (id, email, verify, callback) => {
+      callback();
+    });
   });
 
   afterEach(() => {
@@ -57,7 +64,6 @@ describe('Supplier store', () => {
     let created;
 
     const createParams = {email: 'test@bigwednesday.io', password: '12345'};
-    const supplierKey = ['Supplier', 'supplier-a'];
 
     beforeEach(() => {
       return supplierStore.insert(supplierKey, createParams)
@@ -76,7 +82,14 @@ describe('Supplier store', () => {
 
     it('persists supplier', () => {
       sinon.assert.calledOnce(saveStub);
-      sinon.assert.calledWith(saveStub, sinon.match({key: supplierKey, method: 'insert', data: _.omit(createParams, 'password')}));
+      sinon.assert.calledWith(saveStub, sinon.match({
+        key: supplierKey,
+        method: 'insert',
+        data: {
+          email: createParams.email,
+          _hidden: {auth0Id: fakeAuth0Id}
+        }
+      }));
     });
 
     it('does not persist password', () => {
@@ -99,6 +112,12 @@ describe('Supplier store', () => {
         });
     });
 
+    it('returns customer attributes', () => {
+      const attributeParams = _.omit(createParams, 'password');
+      const createdAttributes = _.omit(created, ['id', '_metadata']);
+      expect(createdAttributes).to.eql(_.assign(attributeParams, {_hidden: {auth0Id: fakeAuth0Id}}));
+    });
+
     it('errors when supplier exists', () => {
       return supplierStore.insert(supplierKey, {email: 'existing@bigwednesday.io', password: '12345'})
         .then(() => {
@@ -115,6 +134,74 @@ describe('Supplier store', () => {
           throw new Error('Insert supplier should fail');
         }, err => {
           expect(err.name).to.equal('InvalidPasswordError');
+          expect(err instanceof Error).to.equal(true);
+        });
+    });
+  });
+
+  describe('update', () => {
+    let updated;
+
+    const existingSupplier = {
+      id: 'supplier-a',
+      email: 'existing@bigwednesday.io',
+      name: 'supplier king',
+      _metadata: {created: new Date(), updated: new Date()}
+    };
+
+    const updateParams = {
+      email: 'updated@bigwednesday.io',
+      name: 'Updated name'
+    };
+
+    beforeEach(() => {
+      sandbox.stub(dataset, 'get', (args, callback) => {
+        if (_.eq(args, supplierKey)) {
+          return callback(null, {
+            key: {path: supplierKey},
+            data: Object.assign({
+              _hidden: {auth0Id: fakeAuth0Id},
+              _metadata_created: existingSupplier._metadata.created,
+              _metadata_updated: existingSupplier._metadata.updated
+            }, _.omit(existingSupplier, ['id', '_metadata']))
+          });
+        }
+
+        callback();
+      });
+
+      return supplierStore
+        .update(supplierKey, updateParams)
+        .then(supplier => {
+          updated = supplier;
+        });
+    });
+
+    it('persists updated attributes', () => {
+      sinon.assert.calledOnce(saveStub);
+      sinon.assert.calledWith(saveStub, sinon.match({
+        key: supplierKey,
+        method: 'update',
+        data: updateParams
+      }));
+    });
+
+    it('returns updated resource', () => {
+      expect(_.omit(updated, 'id', '_metadata')).to.eql(_.assign(updateParams, {_hidden: {auth0Id: fakeAuth0Id}}));
+    });
+
+    it('updates email address in auth0', () => {
+      sinon.assert.calledOnce(updateUserEmailStub);
+      sinon.assert.calledWith(updateUserEmailStub, fakeAuth0Id, updateParams.email, true);
+    });
+
+    it('errors on non-existent customer', () => {
+      return supplierStore
+        .update(entities.supplierKey('unkown-supplier'), updateParams)
+        .then(() => {
+          throw new Error('Error expected');
+        }, err => {
+          expect(err.name).to.equal('EntityNotFoundError');
           expect(err instanceof Error).to.equal(true);
         });
     });

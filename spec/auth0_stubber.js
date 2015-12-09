@@ -14,6 +14,9 @@ class Stubber {
     this.sandbox.stub(auth0, 'deleteUser', (id, callback) => {
       callback();
     });
+    this.sandbox.stub(auth0, 'updateUserEmail', (id, email, verify, callback) => {
+      callback();
+    });
   }
 
   disable() {
