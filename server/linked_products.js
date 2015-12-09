@@ -3,30 +3,12 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const Joi = require('joi');
-const request = require('request');
 
 const dataset = require('../lib/dataset');
 const datasetEntities = require('../lib/dataset_entities');
+const linkedProductMapper = require('../lib/linked_product_mapper');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
-
-const productsApi = `http://${process.env.PRODUCTS_API_SVC_HOST}:${process.env.PRODUCTS_API_SVC_PORT}`;
-
-const getProductData = ids =>
-  new Promise((resolve, reject) => {
-    const idsQuery = `id[]=${ids.join('&id[]=')}`;
-    request({url: `${productsApi}/products?${idsQuery}`}, (err, response, body) => {
-      if (err) {
-        return reject(err);
-      }
-
-      if (response.statusCode === 200) {
-        resolve(JSON.parse(body));
-      }
-
-      reject(new Error(`Products API error response [${response.statusCode}]. ${body}`));
-    });
-  });
 
 const verifySupplier = (request, reply) => {
   const supplierId = request.params.supplierId;
@@ -102,31 +84,12 @@ module.exports.register = (server, options, next) => {
       const limit = request.query.hitsPerPage || 10;
       const page = request.query.page || 1;
       const offset = page === 1 ? 0 : (page - 1) * limit;
-      const expandProducts = request.query.expand.indexOf('product') >= 0;
 
       const query = datasetEntities.linkedProductQuery().offset(offset).limit(limit);
 
       DatastoreModel.find(query)
-        .then(linkedProducts => {
-          if (expandProducts) {
-            return getProductData(linkedProducts.map(p => p.product_id))
-              .then(products => Promise.resolve([linkedProducts, products]));
-          }
-
-          return Promise.resolve([linkedProducts]);
-        })
-        .then(_.spread((linkedProducts, products) => {
-          if (expandProducts) {
-            const results = linkedProducts.map(linkedProduct => {
-              const product = products.find(p => p.id === linkedProduct.product_id);
-              return product ? Object.assign(_.omit(linkedProduct, 'product_id'), {product}) : linkedProduct;
-            });
-
-            return reply(results);
-          }
-
-          reply(linkedProducts);
-        }))
+        .then(_.partialRight(linkedProductMapper.toModelArray, request.query.expand))
+        .then(reply)
         .catch(err => {
           console.error(err);
           reply.badImplementation();
@@ -156,20 +119,9 @@ module.exports.register = (server, options, next) => {
     method: 'GET',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
-      const expandProduct = request.query.expand.indexOf('product') >= 0;
-
       DatastoreModel.get(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id))
-        .then(linkedProduct => {
-          if (expandProduct) {
-            return getProductData([linkedProduct.product_id])
-              .then(products => Promise.resolve([linkedProduct, products.length ? products[0] : null]));
-          }
-
-          return Promise.resolve([linkedProduct, null]);
-        })
-        .then(_.spread((linkedProduct, product) =>
-          reply(expandProduct && product ? Object.assign(_.omit(linkedProduct, 'product_id'), {product}) : linkedProduct)
-        ))
+        .then(_.partialRight(linkedProductMapper.toModel, request.query.expand))
+        .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
             return reply.notFound();
