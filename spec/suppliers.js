@@ -7,7 +7,9 @@ const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 const auth0Stubber = require('./auth0_stubber');
 
-describe('/suppliers', () => {
+describe('/suppliers', function () {
+  this.timeout(5000);
+
   let createSupplierPayload;
 
   describe('post', () => {

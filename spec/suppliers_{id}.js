@@ -53,7 +53,8 @@ describe('/suppliers/{id}', () => {
     });
   });
 
-  describe('put', () => {
+  describe('put', function () {
+    this.timeout(5000);
     let updateResponse;
 
     let createSupplierPayload;
@@ -164,7 +165,8 @@ describe('/suppliers/{id}', () => {
     });
   });
 
-  describe('delete', () => {
+  describe('delete', function () {
+    this.timeout(5000);
     let supplier1;
     let supplier2;
     let supplier3;
