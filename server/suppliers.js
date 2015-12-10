@@ -10,6 +10,7 @@ const dataset = require('../lib/dataset');
 const datasetEntities = require('../lib/dataset_entities');
 const supplierQueries = require('../lib/supplier_queries');
 const supplierMapper = require('../lib/supplier_mapper');
+const supplierStore = require('../lib/supplier_store');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
@@ -62,9 +63,10 @@ exports.register = function (server, options, next) {
     method: 'POST',
     path: '/suppliers',
     handler: (request, reply) => {
-      DatastoreModel.insert(datasetEntities.supplierKey(cuid()), request.payload).then(supplier => {
-        reply(supplierMapper.toModel(supplier)).created(`/suppliers/${supplier.id}`);
-      }, reply.error.bind(reply));
+      supplierStore.insert(datasetEntities.supplierKey(cuid()), request.payload)
+        .then(supplier => {
+          reply(supplierMapper.toModel(supplier)).created(`/suppliers/${supplier.id}`);
+        }, reply.error.bind(reply));
     },
     config: {
       tags: ['api'],
@@ -88,7 +90,7 @@ exports.register = function (server, options, next) {
     method: 'PUT',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      DatastoreModel.update(datasetEntities.supplierKey(request.params.id), request.payload)
+      supplierStore.update(datasetEntities.supplierKey(request.params.id), request.payload)
         .then(supplier => {
           reply(supplierMapper.toModel(supplier));
         })
@@ -124,7 +126,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      DatastoreModel.get(datasetEntities.supplierKey(request.params.id))
+      supplierStore.get(datasetEntities.supplierKey(request.params.id))
         .then(supplier => {
           reply(supplierMapper.toModel(supplier));
         })
@@ -159,7 +161,7 @@ exports.register = function (server, options, next) {
     handler: (request, reply) => {
       const get = request.pre.postcodeData ?
         supplierQueries.findByDeliveryLocations(request.pre.postcodeData) :
-        DatastoreModel.find(datasetEntities.supplierQuery());
+        supplierStore.find(datasetEntities.supplierQuery());
 
       get.then(result => {
         reply(result.map(supplierMapper.toModel));
@@ -203,7 +205,7 @@ exports.register = function (server, options, next) {
           return reply.conflict(`Supplier "${request.params.id}" has associated linked products, which must be deleted first.`);
         }
 
-        return DatastoreModel.delete(datasetEntities.supplierKey(request.params.id))
+        return supplierStore.delete(datasetEntities.supplierKey(request.params.id))
           .then(() => reply().code(204))
           .catch(err => {
             if (err.name === 'EntityNotFoundError') {

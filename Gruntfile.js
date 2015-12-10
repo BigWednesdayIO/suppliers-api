@@ -13,6 +13,7 @@ module.exports = function (grunt) {
     },
     env: {
       test: {
+        src: '.env',
         RESPONSE_FAIL_ACTION: 'error'
       }
     },

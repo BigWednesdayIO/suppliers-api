@@ -3,6 +3,7 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const expect = require('chai').expect;
+const auth0Stubber = require('./auth0_stubber');
 
 const specRequest = require('./spec_request');
 const depotParameters = require('./parameters/depot');
@@ -54,10 +55,15 @@ describe('/suppliers/{id}', () => {
 
   describe('put', () => {
     let updateResponse;
-    const createSupplierPayload = {name: 'A Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
-    const updatedSupplierPayload = {name: 'New name', email: `${cuid()}@bigwednesday.io`};
+
+    let createSupplierPayload;
+    let updatedSupplierPayload;
 
     beforeEach(() => {
+      auth0Stubber.disable();
+      createSupplierPayload = {name: 'A Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
+      updatedSupplierPayload = {name: 'New name', email: `${cuid()}@bigwednesday.io`};
+
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
           return specRequest({url: `/suppliers/${response.result.id}`, method: 'PUT', payload: updatedSupplierPayload});
@@ -164,6 +170,8 @@ describe('/suppliers/{id}', () => {
     let supplier3;
 
     beforeEach(() => {
+      auth0Stubber.disable();
+
       return Promise.all([
         specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}}),
         specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}}),
