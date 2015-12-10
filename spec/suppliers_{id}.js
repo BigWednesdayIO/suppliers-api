@@ -6,6 +6,7 @@ const expect = require('chai').expect;
 
 const specRequest = require('./spec_request');
 const depotParameters = require('./parameters/depot');
+const linkedProductParameters = require('./parameters/linked_product');
 
 describe('/suppliers/{id}', () => {
   const createSupplierPayload = {name: 'A Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
@@ -160,17 +161,24 @@ describe('/suppliers/{id}', () => {
   describe('delete', () => {
     let supplier1;
     let supplier2;
+    let supplier3;
 
     beforeEach(() => {
-      return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
-        .then(response => {
-          supplier1 = response.result;
-          return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}});
-        })
-        .then(response => {
-          supplier2 = response.result;
-          return specRequest({url: `/suppliers/${supplier2.id}/depots`, method: 'POST', payload: depotParameters()});
-        });
+      return Promise.all([
+        specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}}),
+        specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}}),
+        specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
+      ])
+      .then(responses => {
+        supplier1 = responses[0].result;
+        supplier2 = responses[1].result;
+        supplier3 = responses[2].result;
+
+        return Promise.all([
+          specRequest({url: `/suppliers/${supplier2.id}/depots`, method: 'POST', payload: depotParameters()}),
+          specRequest({url: `/suppliers/${supplier3.id}/linked_products`, method: 'POST', payload: linkedProductParameters})
+        ]);
+      });
     });
 
     it('returns http 404 when supplier does not exist', () => {
@@ -183,6 +191,14 @@ describe('/suppliers/{id}', () => {
         .then(response => {
           expect(response.statusCode).to.equal(409);
           expect(response.result.message).to.equal(`Supplier "${supplier2.id}" has associated depots, which must be deleted first.`);
+        });
+    });
+
+    it('returns http 409 when supplier has associated linked products', () => {
+      return specRequest({url: `/suppliers/${supplier3.id}`, method: 'DELETE'})
+        .then(response => {
+          expect(response.statusCode).to.equal(409);
+          expect(response.result.message).to.equal(`Supplier "${supplier3.id}" has associated linked products, which must be deleted first.`);
         });
     });
 

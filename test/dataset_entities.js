@@ -100,4 +100,12 @@ describe('Dataset entities', () => {
       expect(datasetEntities[fn]().orders).to.deep.equal([{name: '_metadata_created', sign: '+'}]);
     });
   });
+
+  it('linkedProductQuery generates a query for the SupplierLinkedProduct kind', () => {
+    expect(datasetEntities.linkedProductQuery().kinds).to.deep.equal(['SupplierLinkedProduct']);
+  });
+
+  it('linkedProductQuery sets a default order on created date', () => {
+    expect(datasetEntities.linkedProductQuery().orders).to.deep.equal([{name: '_metadata_created', sign: '+'}]);
+  });
 });

@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const Boom = require('boom');
 const cuid = require('cuid');
 const Joi = require('joi');
@@ -185,26 +186,35 @@ exports.register = function (server, options, next) {
     method: 'DELETE',
     path: '/suppliers/{id}',
     handler: (request, reply) => {
-      const hasDepotsQuery = datasetEntities.depotQuery().hasAncestor(datasetEntities.supplierKey(request.params.id));
+      const supplierKey = datasetEntities.supplierKey(request.params.id);
+      const hasDepotsQuery = datasetEntities.depotQuery().hasAncestor(supplierKey);
+      const hasLinkedProductsQuery = datasetEntities.linkedProductQuery().hasAncestor(supplierKey);
 
-      DatastoreModel.find(hasDepotsQuery)
-        .then(depots => {
-          if (depots.length) {
-            return reply(Boom.conflict(`Supplier "${request.params.id}" has associated depots, which must be deleted first.`));
-          }
+      Promise.all([
+        DatastoreModel.find(hasDepotsQuery),
+        DatastoreModel.find(hasLinkedProductsQuery)
+      ])
+      .then(_.spread((depots, linkedProducts) => {
+        if (depots.length) {
+          return reply.conflict(`Supplier "${request.params.id}" has associated depots, which must be deleted first.`);
+        }
 
-          return DatastoreModel.delete(datasetEntities.supplierKey(request.params.id))
-            .then(() => reply().code(204))
-            .catch(err => {
-              if (err.name === 'EntityNotFoundError') {
-                return reply.notFound();
-              }
+        if (linkedProducts.length) {
+          return reply.conflict(`Supplier "${request.params.id}" has associated linked products, which must be deleted first.`);
+        }
 
-              console.error(err);
-              reply.error(err);
-            });
-        })
-        .catch(reply.error.bind(reply));
+        return DatastoreModel.delete(datasetEntities.supplierKey(request.params.id))
+          .then(() => reply().code(204))
+          .catch(err => {
+            if (err.name === 'EntityNotFoundError') {
+              return reply.notFound();
+            }
+
+            console.error(err);
+            reply.error(err);
+          });
+      }))
+      .catch(reply.error.bind(reply));
     },
     config: {
       tags: ['api'],

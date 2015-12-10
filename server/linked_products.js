@@ -1,10 +1,12 @@
 'use strict';
 
+const _ = require('lodash');
 const cuid = require('cuid');
 const Joi = require('joi');
 
 const dataset = require('../lib/dataset');
 const datasetEntities = require('../lib/dataset_entities');
+const linkedProductMapper = require('../lib/linked_product_mapper');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
@@ -23,16 +25,19 @@ const verifySupplier = (request, reply) => {
 };
 
 const linkedProductsAttributes = {
-  product_id: Joi.string().required().description('The product identifier'),
   product_code: Joi.string().description('The supplier\'s product code or identifier'),
   price: Joi.number().precision(2).min(0.01).required().description('The base price for the supplier'),
   was_price: Joi.number().precision(2).min(0.01).required().description('The previous price for the supplier')
 };
 
-const requestSchema = Joi.object(linkedProductsAttributes).meta({className: 'LinkedProductParameters'});
+const requestSchema = Joi.object(Object.assign({
+  product_id: Joi.string().required().description('The product identifier')
+}, linkedProductsAttributes)).meta({className: 'LinkedProductParameters'});
 
 const responseSchema = Joi.object(Object.assign({
   id: Joi.string().required().description('The linked product identifier'),
+  product_id: Joi.string().when('product', {is: null, then: Joi.required()}).description('The product identifier'),
+  product: Joi.object().meta({className: 'Product'}).description('The expanded associated product resource'),
   _metadata: Joi.object({
     created: Joi.date().required().description('Date the linked product was created'),
     updated: Joi.date().required().description('Date the linked product was updated')
@@ -58,7 +63,11 @@ module.exports.register = (server, options, next) => {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier')
         },
-        payload: requestSchema.description('The linked product to add to the supplier')
+        payload: requestSchema.description('The linked product to add to the supplier'),
+        options: {
+          // disable conversion, otherwise decimal precision is automatically rounded and not validated
+          convert: false
+        }
       },
       response: {
         status: {
@@ -70,9 +79,48 @@ module.exports.register = (server, options, next) => {
 
   server.route({
     method: 'GET',
+    path: '/suppliers/{supplierId}/linked_products',
+    handler: (request, reply) => {
+      const limit = request.query.hitsPerPage || 10;
+      const page = request.query.page || 1;
+      const offset = page === 1 ? 0 : (page - 1) * limit;
+
+      const query = datasetEntities.linkedProductQuery().offset(offset).limit(limit);
+
+      DatastoreModel.find(query)
+        .then(_.partialRight(linkedProductMapper.toModelArray, request.query.expand))
+        .then(reply)
+        .catch(err => {
+          console.error(err);
+          reply.badImplementation();
+        });
+    },
+    config: {
+      tags: ['api'],
+      validate: {
+        params: {
+          supplierId: Joi.string().required().description('Supplier identifier')
+        },
+        query: {
+          hitsPerPage: Joi.number().integer().min(1).max(50).description('Number of products to return for a page'),
+          page: Joi.number().integer().min(1).description('The page number to return'),
+          expand: Joi.array().items(Joi.string().valid('product')).default([]).description('Associated resources to expand')
+        }
+      },
+      response: {
+        status: {
+          200: Joi.array().items(responseSchema).description('Linked products')
+        }
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
     path: '/suppliers/{supplierId}/linked_products/{id}',
     handler: (request, reply) => {
       DatastoreModel.get(datasetEntities.linkedProductKey(request.params.supplierId, request.params.id))
+        .then(_.partialRight(linkedProductMapper.toModel, request.query.expand))
         .then(reply)
         .catch(err => {
           if (err.name === 'EntityNotFoundError') {
@@ -90,6 +138,9 @@ module.exports.register = (server, options, next) => {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier'),
           id: Joi.string().required().description('Linked product identifier')
+        },
+        query: {
+          expand: Joi.array().items(Joi.string().valid('product')).default([]).description('Associated resources to expand')
         }
       },
       response: {
@@ -123,7 +174,11 @@ module.exports.register = (server, options, next) => {
           supplierId: Joi.string().required().description('Supplier identifier'),
           id: Joi.string().required().description('Linked product identifier')
         },
-        payload: requestSchema.description('The update linked product')
+        payload: requestSchema.description('The update linked product'),
+        options: {
+          // disable conversion, otherwise decimal precision is automatically rounded and not validated
+          convert: false
+        }
       },
       response: {
         status: {
