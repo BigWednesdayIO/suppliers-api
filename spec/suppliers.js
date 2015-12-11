@@ -7,6 +7,8 @@ const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 const auth0Stubber = require('./auth0_stubber');
 
+const linkedProductParameters = require('./parameters/linked_product');
+
 describe('/suppliers', function () {
   this.timeout(5000);
 
@@ -174,6 +176,35 @@ describe('/suppliers', function () {
             expect(response.result.message).to.equal('child "deliver_to" fails because ["deliver_to" with value "ab113de" is not a known postcode]');
           });
       });
+    });
+
+    describe('who supply product', () => {
+      beforeEach(() => {
+        return specRequest({url: `/suppliers/${createdSuppliers[0].id}/linked_products`, method: 'POST', payload: linkedProductParameters})
+          .then(() => Promise.all([
+            specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: linkedProductParameters}),
+            specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: _.assign({}, linkedProductParameters, {product_id: 'abc'})})
+          ]));
+      });
+
+      it('filters out suppliers that do not supply the product', () => {
+        return Promise.all([
+          specRequest({url: '/suppliers?supplies_product=abc', method: 'GET'}),
+          specRequest({url: '/suppliers?supplies_product=1', method: 'GET'})
+        ])
+        .then(_.spread((sellingAbc, selling1) => {
+          expect(sellingAbc.result).to.deep.equal([createdSuppliers[1]]);
+          expect(selling1.result).to.deep.equal([createdSuppliers[0], createdSuppliers[1]]);
+        }));
+      });
+    });
+
+    it('returns http 400 when deliver_to and supplies_product are used together', () => {
+      return specRequest({url: '/suppliers?deliver_to=ec2y9ar&supplies_product=1'})
+        .then(response => {
+          expect(response.statusCode).to.equal(400);
+          expect(response.result).to.have.property('message', '"deliver_to" must not exist simultaneously with [supplies_product]');
+        });
     });
   });
 });

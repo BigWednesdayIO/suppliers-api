@@ -23,6 +23,10 @@ const depotEntities = [
   {key: {path: ['Supplier', '5', 'Depot', '1']}, data: {postcode: 'aberdeenpostcode', delivery_places: ['Aberdeen']}}
 ];
 
+const linkedProductEntities = [
+  {key: {path: ['Supplier', '5', 'SupplierLinkedProduct', '1']}, data: {product_id: 'aberdeensupplierproduct'}}
+];
+
 const stubDatastoreModel = () => {
   return {
     getMany: keys => {
@@ -37,9 +41,13 @@ const stubDatastoreModel = () => {
 const supplierQueries = proxyquire('../lib/supplier_queries', {'gcloud-datastore-model': stubDatastoreModel});
 
 describe('Supplier queries', () => {
-  describe('findByDeliveryLocations', () => {
-    let sandbox;
+  let sandbox;
 
+  afterEach(() => {
+    sandbox.restore();
+  });
+
+  describe('findByDeliveryLocations', () => {
     beforeEach(() => {
       sandbox = sinon.sandbox.create();
 
@@ -56,10 +64,6 @@ describe('Supplier queries', () => {
 
         callback(null, results);
       });
-    });
-
-    afterEach(() => {
-      sandbox.restore();
     });
 
     it('returns suppliers with depots delivering to the postcode country', () => {
@@ -99,6 +103,40 @@ describe('Supplier queries', () => {
 
     it('does not return suppliers that do not deliver to the postcode', () => {
       return supplierQueries.findByDeliveryLocations({place: 'Aberdeen'})
+        .then(suppliers => {
+          expect(_.find(suppliers, {name: 'brent supplier'})).to.not.exist;
+        });
+    });
+  });
+
+  describe('findBySuppliedProduct', () => {
+    beforeEach(() => {
+      sandbox = sinon.sandbox.create();
+
+      sandbox.stub(dataset, 'runQuery', (query, callback) => {
+        if (query.kinds[0] !== 'SupplierLinkedProduct') {
+          throw new Error(`Expected linked product query. Got ${query}`);
+        }
+
+        let results = linkedProductEntities;
+
+        query.filters.forEach(filter => {
+          results = results.filter(entity => entity.data[filter.name] && entity.data[filter.name] === filter.val);
+        });
+
+        callback(null, results);
+      });
+    });
+
+    it('returns suppliers that sell the identified product', () => {
+      return supplierQueries.findBySuppliedProduct('aberdeensupplierproduct')
+        .then(suppliers => {
+          expect(_.find(suppliers, {name: 'aberdeen supplier'})).to.exist;
+        });
+    });
+
+    it('does not returns suppliers that do not sell the identified product', () => {
+      return supplierQueries.findBySuppliedProduct('aberdeensupplierproduct')
         .then(suppliers => {
           expect(_.find(suppliers, {name: 'brent supplier'})).to.not.exist;
         });
