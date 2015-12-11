@@ -58,6 +58,18 @@ const suppliersSchema = baseSupplierSchema.concat(Joi.object({
   className: 'Supplier'
 });
 
+const getSuppliers = request => {
+  if (request.query.deliver_to) {
+    return supplierQueries.findByDeliveryLocations(request.pre.postcodeData);
+  }
+
+  if (request.query.supplies_product) {
+    return supplierQueries.findBySuppliedProduct(request.query.supplies_product);
+  }
+
+  return supplierStore.find(datasetEntities.supplierQuery());
+};
+
 exports.register = function (server, options, next) {
   server.route({
     method: 'POST',
@@ -159,11 +171,7 @@ exports.register = function (server, options, next) {
     method: 'GET',
     path: '/suppliers',
     handler: (request, reply) => {
-      const get = request.pre.postcodeData ?
-        supplierQueries.findByDeliveryLocations(request.pre.postcodeData) :
-        supplierStore.find(datasetEntities.supplierQuery());
-
-      get.then(result => {
+      getSuppliers(request).then(result => {
         reply(result.map(supplierMapper.toModel));
       }, reply.error.bind(reply));
     },
@@ -171,9 +179,10 @@ exports.register = function (server, options, next) {
       tags: ['api'],
       pre: [{method: getDeliveryPostcodeData, assign: 'postcodeData'}],
       validate: {
-        query: {
-          deliver_to: Joi.string().regex(/^[A-Z]{1,2}[0-9][0-9A-Z]?[0-9][A-Z]{2}$/i, 'postcode').description('Delivery postcode (no white space)')
-        }
+        query: Joi.object({
+          deliver_to: Joi.string().regex(/^[A-Z]{1,2}[0-9][0-9A-Z]?[0-9][A-Z]{2}$/i, 'postcode').description('Delivery postcode (no white space)'),
+          supplies_product: Joi.string().description('A product identifier')
+        }).nand('deliver_to', 'supplies_product')
       },
       response: {
         failAction: process.env.RESPONSE_FAIL_ACTION || 'log',
