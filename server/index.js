@@ -13,6 +13,8 @@ const plugins = [{
 }, {
   register: require('./depots')
 }, {
+  register: require('./authenticate')
+}, {
   register: require('./linked_products')
 }, {
   register: Swaggered,
