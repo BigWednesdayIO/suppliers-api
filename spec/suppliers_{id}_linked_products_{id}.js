@@ -4,6 +4,7 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
+const signJwt = require('./sign_jwt');
 
 const linkedProductParameters = require('./parameters/linked_product.js');
 
@@ -11,12 +12,14 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
   const supplierPayload = {name: 'a supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
   let createSupplierResponse;
   let createResponse;
+  let token;
 
   beforeEach(() =>
     specRequest({url: '/suppliers', method: 'POST', payload: supplierPayload})
       .then(response => {
         createSupplierResponse = response;
-        return specRequest({url: `${response.headers.location}/linked_products`, method: 'POST', payload: linkedProductParameters});
+        token = signJwt({scope: [`supplier:${response.result.id}`]});
+        return specRequest({url: `${response.headers.location}/linked_products`, method: 'POST', payload: linkedProductParameters, headers: {authorization: token}});
       })
       .then(response => createResponse = response));
 
@@ -24,7 +27,7 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     let getResponse;
 
     beforeEach(() =>
-      specRequest({url: createResponse.headers.location, method: 'GET'})
+      specRequest({url: createResponse.headers.location, method: 'GET', headers: {authorization: token}})
         .then(response => getResponse = response));
 
     it('returns http 200', () => {
@@ -45,7 +48,7 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     });
 
     it('returns the associated product when expanded', () =>
-      specRequest({url: `${createResponse.headers.location}?expand[]=product`, method: 'GET'})
+      specRequest({url: `${createResponse.headers.location}?expand[]=product`, method: 'GET', headers: {authorization: token}})
         .then(response => {
           expect(response.result).to.have.property('product');
           expect(response.result.product).to.be.an('object');
@@ -53,29 +56,37 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
         }));
 
     it('returns http 404 when supplier does not exist', () =>
-      specRequest({url: '/suppliers/abc/linked_products/1', method: 'GET'})
+      specRequest({url: '/suppliers/abc/linked_products/1', method: 'GET', headers: {authorization: signJwt({scope: ['supplier:abc']})}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "abc" not found.');
         }));
 
     it('returns http 404 when linked product does not exist', () =>
-      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'GET'})
+      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'GET', headers: {authorization: token}})
         .then(response => expect(response.statusCode).to.equal(404)));
 
     it('rejects with http 400 when expand is not an array', () =>
-      specRequest({url: `${createResponse.headers.location}?expand=product`, method: 'GET'})
+      specRequest({url: `${createResponse.headers.location}?expand=product`, method: 'GET', headers: {authorization: token}})
         .then(response => {
           expect(response.statusCode).to.equal(400);
           expect(response.result).to.have.property('message', 'child "expand" fails because ["expand" must be an array]');
         }));
 
     it('rejects with http 400 when expand contains anything that is not "product"', () =>
-      specRequest({url: `${createResponse.headers.location}?expand[]=test`, method: 'GET'})
+      specRequest({url: `${createResponse.headers.location}?expand[]=test`, method: 'GET', headers: {authorization: token}})
         .then(response => {
           expect(response.statusCode).to.equal(400);
           expect(response.result).to.have.property('message', 'child "expand" fails because ["expand" at position 0 fails because ["0" must be one of [product]]]');
         }));
+
+    it('returns http 403 when requesting linked product without correct scope', () => {
+      return specRequest({url: createResponse.headers.location, method: 'GET', headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
   });
 
   describe('put', () => {
@@ -84,9 +95,9 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     let getUpdatedResponse;
 
     beforeEach(() =>
-      specRequest({url: createResponse.headers.location, method: 'PUT', payload: updatePayload})
+      specRequest({url: createResponse.headers.location, method: 'PUT', payload: updatePayload, headers: {authorization: token}})
         .then(response => updateResponse = response)
-        .then(() => specRequest({url: createResponse.headers.location, method: 'GET'}))
+        .then(() => specRequest({url: createResponse.headers.location, method: 'GET', headers: {authorization: token}}))
         .then(response => getUpdatedResponse = response));
 
     it('returns http 200', () => {
@@ -115,22 +126,30 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     });
 
     it('returns http 404 when supplier does not exist', () =>
-      specRequest({url: '/suppliers/abc/linked_products/1', method: 'PUT', payload: updatePayload})
+      specRequest({url: '/suppliers/abc/linked_products/1', method: 'PUT', payload: updatePayload, headers: {authorization: signJwt({scope: ['supplier:abc']})}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "abc" not found.');
         }));
 
     it('returns http 404 when linked product does not exist', () =>
-      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'PUT', payload: updatePayload})
+      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'PUT', payload: updatePayload, headers: {authorization: token}})
         .then(response => expect(response.statusCode).to.equal(404)));
+
+    it('returns http 403 when updating linked product without correct scope', () => {
+      return specRequest({url: createResponse.headers.location, method: 'PUT', payload: updatePayload, headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
   });
 
   describe('delete', () => {
     let deleteResponse;
 
     beforeEach(() =>
-      specRequest({url: createResponse.headers.location, method: 'DELETE'})
+      specRequest({url: createResponse.headers.location, method: 'DELETE', headers: {authorization: token}})
         .then(response => deleteResponse = response));
 
     it('returns http 204', () => {
@@ -142,18 +161,26 @@ describe('/suppliers/{id}/linked_products/{id}', () => {
     });
 
     it('deletes the resource', () =>
-      specRequest({url: createResponse.headers.location, method: 'GET'})
+      specRequest({url: createResponse.headers.location, method: 'GET', headers: {authorization: token}})
         .then(response => expect(response.statusCode).to.equal(404)));
 
     it('returns http 404 when supplier does not exist', () =>
-      specRequest({url: '/suppliers/abc/linked_products/1', method: 'DELETE'})
+      specRequest({url: '/suppliers/abc/linked_products/1', method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:abc']})}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "abc" not found.');
         }));
 
     it('returns http 404 when linked product does not exist', () =>
-      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'DELETE'})
+      specRequest({url: `${createSupplierResponse.headers.location}/linked_products/abc`, method: 'DELETE', headers: {authorization: token}})
         .then(response => expect(response.statusCode).to.equal(404)));
+
+    it('returns http 403 when deleting linked product without correct scope', () => {
+      return specRequest({url: createResponse.headers.location, method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
   });
 });

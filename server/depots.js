@@ -60,6 +60,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -91,6 +95,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -117,6 +125,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -149,6 +161,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -183,6 +199,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {

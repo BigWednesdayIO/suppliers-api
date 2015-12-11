@@ -4,10 +4,14 @@ const _ = require('lodash');
 const cuid = require('cuid');
 const expect = require('chai').expect;
 const auth0Stubber = require('./auth0_stubber');
+const signJwt = require('./sign_jwt');
 
 const specRequest = require('./spec_request');
 const depotParameters = require('./parameters/depot');
 const linkedProductParameters = require('./parameters/linked_product');
+
+const adminToken = signJwt({scope: ['admin']});
+const otherUsersToken = signJwt({scope: ['supplier:12345']});
 
 describe('/suppliers/{id}', () => {
   const createSupplierPayload = {name: 'A Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'};
@@ -59,6 +63,7 @@ describe('/suppliers/{id}', () => {
 
     let createSupplierPayload;
     let updatedSupplierPayload;
+    let token;
 
     beforeEach(() => {
       auth0Stubber.disable();
@@ -67,7 +72,8 @@ describe('/suppliers/{id}', () => {
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
         .then(response => {
-          return specRequest({url: `/suppliers/${response.result.id}`, method: 'PUT', payload: updatedSupplierPayload});
+          token = signJwt({scope: [`supplier:${response.result.id}`]});
+          return specRequest({url: `/suppliers/${response.result.id}`, method: 'PUT', payload: updatedSupplierPayload, headers: {authorization: token}});
         })
         .then(response => {
           updateResponse = response;
@@ -91,19 +97,28 @@ describe('/suppliers/{id}', () => {
     });
 
     it('returns http 404 for a supplier that doesn\'t exist', () => {
-      return specRequest({url: '/suppliers/abc', method: 'PUT', payload: updatedSupplierPayload})
+      return specRequest({url: '/suppliers/abc', method: 'PUT', payload: updatedSupplierPayload, headers: {authorization: adminToken}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
         });
     });
 
+    it('returns http 403 when updating supplier without correct scope ', () => {
+      return specRequest({url: '/suppliers/abc', method: 'PUT', payload: updatedSupplierPayload, headers: {authorization: otherUsersToken}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
+
     describe('validation', () => {
       const putSupplierPayload = {name: 'supplier', email: `${cuid()}@bigwednesday.io`};
+      const supToken = signJwt({scope: ['supplier:SUP']});
 
       it('rejects id', () => {
         const payload = _.assign({id: 'SUP'}, putSupplierPayload);
 
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload, headers: {authorization: supToken}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('"id" is not allowed');
@@ -113,7 +128,7 @@ describe('/suppliers/{id}', () => {
       it('requires email', () => {
         const payload = _.omit(putSupplierPayload, 'email');
 
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload, headers: {authorization: supToken}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "email" fails because ["email" is required]');
@@ -124,7 +139,7 @@ describe('/suppliers/{id}', () => {
         const payload = _.clone(putSupplierPayload);
         payload.email = 'bigwednesday.io';
 
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload, headers: {authorization: supToken}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "email" fails because ["email" must be a valid email]');
@@ -134,7 +149,7 @@ describe('/suppliers/{id}', () => {
       it('requires name', () => {
         const payload = _.omit(putSupplierPayload, 'name');
 
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload, headers: {authorization: supToken}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "name" fails because ["name" is required]');
@@ -145,7 +160,7 @@ describe('/suppliers/{id}', () => {
         const payload = _.omit(putSupplierPayload, 'name');
         payload.name = 123;
 
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload, headers: {authorization: supToken}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
@@ -156,7 +171,7 @@ describe('/suppliers/{id}', () => {
         const payload = _.clone(putSupplierPayload);
         payload._metadata = {created: new Date()};
 
-        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/SUP', method: 'PUT', payload, headers: {authorization: supToken}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('"_metadata" is not allowed');
@@ -170,6 +185,9 @@ describe('/suppliers/{id}', () => {
     let supplier1;
     let supplier2;
     let supplier3;
+    let supplier1Token;
+    let supplier2Token;
+    let supplier3Token;
 
     beforeEach(() => {
       auth0Stubber.disable();
@@ -183,21 +201,32 @@ describe('/suppliers/{id}', () => {
         supplier1 = responses[0].result;
         supplier2 = responses[1].result;
         supplier3 = responses[2].result;
+        supplier1Token = signJwt({scope: [`supplier:${supplier1.id}`]});
+        supplier2Token = signJwt({scope: [`supplier:${supplier2.id}`]});
+        supplier3Token = signJwt({scope: [`supplier:${supplier3.id}`]});
 
         return Promise.all([
-          specRequest({url: `/suppliers/${supplier2.id}/depots`, method: 'POST', payload: depotParameters()}),
-          specRequest({url: `/suppliers/${supplier3.id}/linked_products`, method: 'POST', payload: linkedProductParameters})
+          specRequest({url: `/suppliers/${supplier2.id}/depots`, method: 'POST', payload: depotParameters(), headers: {authorization: supplier2Token}}),
+          specRequest({url: `/suppliers/${supplier3.id}/linked_products`, method: 'POST', payload: linkedProductParameters, headers: {authorization: supplier3Token}})
         ]);
       });
     });
 
     it('returns http 404 when supplier does not exist', () => {
-      return specRequest({url: '/suppliers/123', method: 'DELETE'})
+      return specRequest({url: '/suppliers/123', method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:123']})}})
         .then(response => expect(response.statusCode).to.equal(404));
     });
 
+    it('returns http 403 when deleting supplier without correct scope', () => {
+      return specRequest({url: '/suppliers/123', method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
+
     it('returns http 409 when supplier has associated depots', () => {
-      return specRequest({url: `/suppliers/${supplier2.id}`, method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier2.id}`, method: 'DELETE', headers: {authorization: supplier2Token}})
         .then(response => {
           expect(response.statusCode).to.equal(409);
           expect(response.result.message).to.equal(`Supplier "${supplier2.id}" has associated depots, which must be deleted first.`);
@@ -205,7 +234,7 @@ describe('/suppliers/{id}', () => {
     });
 
     it('returns http 409 when supplier has associated linked products', () => {
-      return specRequest({url: `/suppliers/${supplier3.id}`, method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier3.id}`, method: 'DELETE', headers: {authorization: supplier3Token}})
         .then(response => {
           expect(response.statusCode).to.equal(409);
           expect(response.result.message).to.equal(`Supplier "${supplier3.id}" has associated linked products, which must be deleted first.`);
@@ -213,7 +242,7 @@ describe('/suppliers/{id}', () => {
     });
 
     it('returns http 204', () => {
-      return specRequest({url: `/suppliers/${supplier1.id}`, method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier1.id}`, method: 'DELETE', headers: {authorization: supplier1Token}})
         .then(response => expect(response.statusCode).to.equal(204));
     });
   });

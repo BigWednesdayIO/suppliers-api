@@ -6,6 +6,7 @@ const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 const auth0Stubber = require('./auth0_stubber');
+const signJwt = require('./sign_jwt');
 
 const linkedProductParameters = require('./parameters/linked_product');
 
@@ -121,11 +122,16 @@ describe('/suppliers', function () {
       {name: 'Supplier C', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}
     ];
     let createdSuppliers;
+    let tokens;
 
     beforeEach(() => {
       return bluebird.mapSeries([1, 0, 2], i => specRequest({url: '/suppliers', method: 'POST', payload: suppliers[i]}))
         .then(responses => {
           createdSuppliers = responses.map(r => r.result);
+          tokens = createdSuppliers.reduce((accum, s) => {
+            accum[s.id] = signJwt({scope: [`supplier:${s.id}`]});
+            return accum;
+          }, {});
         });
     });
 
@@ -139,8 +145,16 @@ describe('/suppliers', function () {
 
     describe('with delivery to postcode', () => {
       beforeEach(() => {
-        return specRequest({url: `/suppliers/${_.find(createdSuppliers, {name: 'Supplier A'}).id}/depots`, method: 'POST', payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
-          .then(() => specRequest({url: `/suppliers/${_.find(createdSuppliers, {name: 'Supplier B'}).id}/depots`, method: 'POST', payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
+        return specRequest({
+          url: `/suppliers/${createdSuppliers[1].id}/depots`,
+          method: 'POST',
+          headers: {authorization: tokens[createdSuppliers[1].id]},
+          payload: {name: 'depot 1', delivery_countries: [], delivery_regions: [], delivery_counties: [], delivery_districts: ['Southwark'], delivery_places: []}})
+        .then(() => specRequest({
+          url: `/suppliers/${createdSuppliers[0].id}/depots`,
+          method: 'POST',
+          headers: {authorization: tokens[createdSuppliers[0].id]},
+          payload: {name: 'depot 1', delivery_countries: ['England'], delivery_regions: [], delivery_counties: [], delivery_districts: [], delivery_places: []}}));
       });
 
       it('filters out suppliers that do not deliver to the postcode', () => {
@@ -180,11 +194,26 @@ describe('/suppliers', function () {
 
     describe('who supply product', () => {
       beforeEach(() => {
-        return specRequest({url: `/suppliers/${createdSuppliers[0].id}/linked_products`, method: 'POST', payload: linkedProductParameters})
-          .then(() => Promise.all([
-            specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: linkedProductParameters}),
-            specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: _.assign({}, linkedProductParameters, {product_id: 'abc'})})
-          ]));
+        return specRequest({
+          url: `/suppliers/${createdSuppliers[0].id}/linked_products`,
+          method: 'POST',
+          headers: {authorization: tokens[createdSuppliers[0].id]},
+          payload: linkedProductParameters
+        })
+        .then(() => Promise.all([
+          specRequest({
+            url: `/suppliers/${createdSuppliers[1].id}/linked_products`,
+            method: 'POST',
+            headers: {authorization: tokens[createdSuppliers[1].id]},
+            payload: linkedProductParameters
+          }),
+          specRequest({
+            url: `/suppliers/${createdSuppliers[1].id}/linked_products`,
+            method: 'POST',
+            headers: {authorization: tokens[createdSuppliers[1].id]},
+            payload: _.assign({}, linkedProductParameters, {product_id: 'abc'})
+          })
+        ]));
       });
 
       it('filters out suppliers that do not supply the product', () => {

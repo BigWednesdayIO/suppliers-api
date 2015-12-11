@@ -82,6 +82,7 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: false,
       validate: {
         payload: baseSupplierSchema.concat(Joi.object({
           password: Joi.string().required().description('Supplier password')
@@ -117,6 +118,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.id}', 'admin']
+      },
       validate: {
         params: {
           id: Joi.string().required().description('Supplier identifier')
@@ -153,6 +158,7 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: false,
       validate: {
         params: {
           id: Joi.string().required().description('Supplier identifier')
@@ -177,6 +183,7 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: false,
       pre: [{method: getDeliveryPostcodeData, assign: 'postcodeData'}],
       validate: {
         query: Joi.object({
@@ -229,6 +236,10 @@ exports.register = function (server, options, next) {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.id}', 'admin']
+      },
       validate: {
         params: {
           id: Joi.string().required().description('Supplier identifier')

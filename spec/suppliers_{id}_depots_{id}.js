@@ -6,9 +6,11 @@ const expect = require('chai').expect;
 
 const specRequest = require('./spec_request');
 const depotParameters = require('./parameters/depot');
+const signJwt = require('./sign_jwt');
 
 describe('/suppliers/{id}/depots/{id}', () => {
   describe('put', () => {
+    let token;
     let updateResponse;
     let createResponse;
     let getUpdatedResponse;
@@ -16,20 +18,31 @@ describe('/suppliers/{id}/depots/{id}', () => {
 
     beforeEach(() =>
       specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
-        .then(response => specRequest({url: `${response.headers.location}/depots`, method: 'POST', payload: depotParameters()}))
+        .then(response => {
+          token = signJwt({scope: [`supplier:${response.result.id}`]});
+          return specRequest({url: `${response.headers.location}/depots`, method: 'POST', payload: depotParameters(), headers: {authorization: token}});
+        })
         .then(response => {
           createResponse = response;
-          return specRequest({url: response.headers.location, method: 'PUT', payload: updatePayload});
+          return specRequest({url: response.headers.location, method: 'PUT', payload: updatePayload, headers: {authorization: token}});
         })
         .then(response => updateResponse = response)
-        .then(() => specRequest({url: createResponse.headers.location, method: 'GET'}))
+        .then(() => specRequest({url: createResponse.headers.location, method: 'GET', headers: {authorization: token}}))
         .then(response => getUpdatedResponse = response));
 
     it('returns http 404 when supplier does not exist', () => {
-      return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: depotParameters()})
+      return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: depotParameters(), headers: {authorization: signJwt({scope: ['supplier:123']})}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "123" not found.');
+        });
+    });
+
+    it('returns http 403 when updating depot without correct scope', () => {
+      return specRequest({url: '/suppliers/123/depots/1', method: 'PUT', payload: depotParameters(), headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
         });
     });
 
@@ -59,10 +72,11 @@ describe('/suppliers/{id}/depots/{id}', () => {
     });
 
     describe('validation', () => {
+      const token = signJwt({scope: ['supplier:1']});
       it('rejects id', () => {
         const payload = _.assign({id: '1'}, depotParameters());
 
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload, headers: {authorization: token}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('"id" is not allowed');
@@ -75,7 +89,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
         it(`requires ${field}`, () => {
           const payload = _.omit(depotParameters(), field);
 
-          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload, headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" is required]`);
@@ -87,7 +101,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
         const payload = _.omit(depotParameters(), 'name');
         payload.name = 123;
 
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload, headers: {authorization: token}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
@@ -100,7 +114,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
         it(`requires ${field} to be an array`, () => {
           const payload = _.assign({}, depotParameters(), {[field]: 1});
 
-          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload, headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" must be an array]`);
@@ -110,7 +124,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
         it(`requires ${field} items to be strings`, () => {
           const payload = _.assign({}, depotParameters(), {[field]: [1]});
 
-          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+          return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload, headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${field}" fails because ["${field}" at position 0 fails because ["0" must be a string]]`);
@@ -121,7 +135,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
       it('does not allow _metadata', () => {
         const payload = _.assign({_metadata: {created: new Date()}}, depotParameters());
 
-        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload})
+        return specRequest({url: '/suppliers/1/depots/1', method: 'PUT', payload, headers: {authorization: token}})
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('"_metadata" is not allowed');
@@ -132,6 +146,7 @@ describe('/suppliers/{id}/depots/{id}', () => {
 
   describe('get', () => {
     let supplier;
+    let token;
     let getResponse;
     let createResponse;
     const depot = depotParameters();
@@ -140,16 +155,17 @@ describe('/suppliers/{id}/depots/{id}', () => {
       specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
         .then(response => {
           supplier = response.result;
-          return specRequest({url: `${response.headers.location}/depots`, method: 'POST', payload: depot});
+          token = signJwt({scope: [`supplier:${response.result.id}`]});
+          return specRequest({url: `${response.headers.location}/depots`, method: 'POST', payload: depot, headers: {authorization: token}});
         })
         .then(response => {
           createResponse = response;
-          return specRequest({url: response.headers.location, method: 'GET'});
+          return specRequest({url: response.headers.location, method: 'GET', headers: {authorization: token}});
         })
         .then(response => getResponse = response));
 
     it('returns http 404 when supplier does not exist', () => {
-      return specRequest({url: '/suppliers/123/depots/1', method: 'GET'})
+      return specRequest({url: '/suppliers/123/depots/1', method: 'GET', headers: {authorization: signJwt({scope: ['supplier:123']})}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "123" not found.');
@@ -157,9 +173,17 @@ describe('/suppliers/{id}/depots/{id}', () => {
     });
 
     it('returns http 404 when depot does not exist', () => {
-      return specRequest({url: `/suppliers/${supplier.id}/depots/2`, method: 'GET'})
+      return specRequest({url: `/suppliers/${supplier.id}/depots/2`, method: 'GET', headers: {authorization: token}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
+        });
+    });
+
+    it('returns http 403 when requesting depot without correct scope', () => {
+      return specRequest({url: `/suppliers/${supplier.id}/depots/2`, method: 'GET', headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
         });
     });
 
@@ -183,32 +207,42 @@ describe('/suppliers/{id}/depots/{id}', () => {
 
   describe('delete', () => {
     let supplier;
+    let token;
     let createResponse;
 
     beforeEach(() => {
       return specRequest({url: '/suppliers', method: 'POST', payload: {name: 'Supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
         .then(response => {
           supplier = response.result;
-          return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: depotParameters()});
+          token = signJwt({scope: [`supplier:${response.result.id}`]});
+          return specRequest({url: `/suppliers/${supplier.id}/depots`, method: 'POST', payload: depotParameters(), headers: {authorization: token}});
         })
         .then(response => createResponse = response);
     });
 
     it('returns http 404 when supplier does not exist', () => {
-      return specRequest({url: '/suppliers/123/depots/1', method: 'DELETE'})
+      return specRequest({url: '/suppliers/123/depots/1', method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:123']})}})
         .then(response => {
           expect(response.statusCode).to.equal(404);
           expect(response.result).to.have.property('message', 'Supplier "123" not found.');
         });
     });
 
+    it('returns http 403 when deleting depot without correct scope', () => {
+      return specRequest({url: '/suppliers/123/depots/1', method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
+
     it('returns http 404 when depot does not exist', () => {
-      return specRequest({url: `/suppliers/${supplier.id}/depots/2`, method: 'DELETE'})
+      return specRequest({url: `/suppliers/${supplier.id}/depots/2`, method: 'DELETE', headers: {authorization: token}})
         .then(response => expect(response.statusCode).to.equal(404));
     });
 
     it('returns http 204', () => {
-      return specRequest({url: createResponse.headers.location, method: 'DELETE'})
+      return specRequest({url: createResponse.headers.location, method: 'DELETE', headers: {authorization: token}})
         .then(response => expect(response.statusCode).to.equal(204));
     });
   });
