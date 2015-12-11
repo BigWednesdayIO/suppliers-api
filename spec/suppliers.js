@@ -180,11 +180,11 @@ describe('/suppliers', function () {
 
     describe('who supply product', () => {
       beforeEach(() => {
-        return Promise.all([
-          specRequest({url: `/suppliers/${createdSuppliers[0].id}/linked_products`, method: 'POST', payload: linkedProductParameters}),
-          specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: linkedProductParameters}),
-          specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: _.assign({}, linkedProductParameters, {product_id: 'abc'})})
-        ]);
+        return specRequest({url: `/suppliers/${createdSuppliers[0].id}/linked_products`, method: 'POST', payload: linkedProductParameters})
+          .then(() => Promise.all([
+            specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: linkedProductParameters}),
+            specRequest({url: `/suppliers/${createdSuppliers[1].id}/linked_products`, method: 'POST', payload: _.assign({}, linkedProductParameters, {product_id: 'abc'})})
+          ]));
       });
 
       it('filters out suppliers that do not supply the product', () => {
