@@ -28,14 +28,14 @@ describe('Supplier store', () => {
       if (body.email === 'fail_to_persist@bigwednesday.io') {
         return Promise.reject('Cannot save');
       }
-      return Promise.resolve(body);
+      return Promise.resolve(_.assign({id: _.last(key.path)}, body));
     });
 
     updateStub = sandbox.stub(datastoreModel.constructor.prototype, 'update', (key, body) => {
       if (body.email === 'fail_to_persist@bigwednesday.io') {
         return Promise.reject('Cannot save');
       }
-      return Promise.resolve(body);
+      return Promise.resolve(_.assign({id: _.last(key.path)}, body));
     });
 
     createUserStub = sandbox.stub(auth0Client, 'createUser', (params, callback) => {
@@ -85,7 +85,10 @@ describe('Supplier store', () => {
       sinon.assert.calledOnce(createUserStub);
       sinon.assert.calledWith(
         createUserStub,
-        sinon.match(createParams)
+        sinon.match(Object.assign({
+          supplier_id: created.id,
+          scope: [`supplier:${created.id}`]
+        }, createParams))
       );
     });
 
