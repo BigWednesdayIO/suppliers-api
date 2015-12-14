@@ -58,6 +58,10 @@ module.exports.register = (server, options, next) => {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -97,6 +101,10 @@ module.exports.register = (server, options, next) => {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       validate: {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier')
@@ -133,6 +141,10 @@ module.exports.register = (server, options, next) => {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -168,6 +180,10 @@ module.exports.register = (server, options, next) => {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {
@@ -205,6 +221,10 @@ module.exports.register = (server, options, next) => {
     },
     config: {
       tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
       pre: [{method: verifySupplier}],
       validate: {
         params: {

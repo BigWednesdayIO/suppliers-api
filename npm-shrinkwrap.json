@@ -537,6 +537,11 @@
       "from": "convert-source-map@>=1.1.0 <2.0.0",
       "resolved": "https://registry.npmjs.org/convert-source-map/-/convert-source-map-1.1.2.tgz"
     },
+    "cookie": {
+      "version": "0.2.3",
+      "from": "cookie@>=0.2.3 <0.3.0",
+      "resolved": "https://registry.npmjs.org/cookie/-/cookie-0.2.3.tgz"
+    },
     "cookiejar": {
       "version": "2.0.1",
       "from": "cookiejar@2.0.1",
@@ -1707,6 +1712,11 @@
           "resolved": "https://registry.npmjs.org/topo/-/topo-2.0.0.tgz"
         }
       }
+    },
+    "hapi-auth-jwt2": {
+      "version": "5.2.1",
+      "from": "hapi-auth-jwt2@>=5.2.1 <6.0.0",
+      "resolved": "https://registry.npmjs.org/hapi-auth-jwt2/-/hapi-auth-jwt2-5.2.1.tgz"
     },
     "hapi-boom-decorators": {
       "version": "1.0.2",

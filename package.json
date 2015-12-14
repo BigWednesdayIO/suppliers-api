@@ -50,6 +50,7 @@
     "gcloud": "^0.25.1",
     "gcloud-datastore-model": "1.0.0",
     "hapi": "^11.1.0",
+    "hapi-auth-jwt2": "^5.2.1",
     "hapi-boom-decorators": "^1.0.2",
     "hapi-error-schemas": "^1.0.0",
     "hapi-swaggered": "^2.4.1",

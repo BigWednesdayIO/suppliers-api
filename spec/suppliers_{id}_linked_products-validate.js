@@ -5,13 +5,18 @@ const cuid = require('cuid');
 const expect = require('chai').expect;
 const specRequest = require('./spec_request');
 const linkedProductParameters = require('./parameters/linked_product');
+const signJwt = require('./sign_jwt');
 
 describe('/suppliers/{id}/linked_products - validation', () => {
   let supplierRoute;
+  let token;
 
   beforeEach(() =>
     specRequest({url: '/suppliers', method: 'POST', payload: {name: 'a supplier', email: `${cuid()}@bigwednesday.io`, password: '8u{F0*W1l5'}})
-      .then(response => supplierRoute = response.headers.location));
+      .then(response => {
+        token = signJwt({scope: [`supplier:${response.result.id}`]});
+        supplierRoute = response.headers.location;
+      }));
 
   const attributes = [
     {name: 'product_id', type: 'string', required: true},
@@ -25,7 +30,7 @@ describe('/suppliers/{id}/linked_products - validation', () => {
       // test required attributes
       attributes.filter(a => a.required).forEach(attribute => {
         it(`requires ${attribute.name} for ${request.method} request`, () => {
-          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: _.omit(linkedProductParameters, attribute.name)})
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: _.omit(linkedProductParameters, attribute.name), headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" is required]`);
@@ -36,7 +41,7 @@ describe('/suppliers/{id}/linked_products - validation', () => {
       // test string attributes
       attributes.filter(a => a.type === 'string').forEach(attribute => {
         it(`rejects non-string ${attribute.name} values for ${request.method} request`, () => {
-          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 1})})
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 1}), headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must be a string]`);
@@ -47,7 +52,7 @@ describe('/suppliers/{id}/linked_products - validation', () => {
       // test money attributes
       attributes.filter(a => a.type === 'money').forEach(attribute => {
         it(`rejects non-numeric ${attribute.name} values for ${request.method} request`, () => {
-          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 'abc'})})
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 'abc'}), headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must be a number]`);
@@ -55,7 +60,7 @@ describe('/suppliers/{id}/linked_products - validation', () => {
         });
 
         it(`rejects number ${attribute.name} values below 0.01 for ${request.method} request`, () => {
-          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 0})})
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 0}), headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must be larger than or equal to 0.01]`);
@@ -63,7 +68,7 @@ describe('/suppliers/{id}/linked_products - validation', () => {
         });
 
         it(`rejects number ${attribute.name} values with too many decimal places for ${request.method} request`, () => {
-          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 10.254})})
+          return specRequest({url: `${supplierRoute}${request.url}`, method: request.method, payload: Object.assign({}, linkedProductParameters, {[attribute.name]: 10.254}), headers: {authorization: token}})
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal(`child "${attribute.name}" fails because ["${attribute.name}" must have no more than 2 decimal places]`);

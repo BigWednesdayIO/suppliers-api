@@ -3,8 +3,11 @@
 const Hapi = require('hapi');
 const Swaggered = require('hapi-swaggered');
 const Package = require('../package.json');
+const jwtAuthStrategy = require('./jwt_auth_strategy');
 
 const plugins = [{
+  register: jwtAuthStrategy
+}, {
   register: require('hapi-version-route')
 }, {
   register: require('hapi-boom-decorators')
