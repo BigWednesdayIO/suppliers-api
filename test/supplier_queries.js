@@ -32,7 +32,9 @@ const stubDatastoreModel = () => {
     getMany: keys => {
       return new Promise(resolve => {
         const matchingEntities = supplierEntities.filter(entity => _.any(keys, key => _.eq(key.path, entity.key.path)));
-        resolve(matchingEntities.map(e => e.data));
+
+        resolve(matchingEntities.map(e =>
+          Object.assign({id: _.last(e.key.path), _metadata: {created: new Date(), updated: new Date()}}, e.data)));
       });
     }
   };
@@ -132,6 +134,14 @@ describe('Supplier queries', () => {
       return supplierQueries.findBySuppliedProduct('aberdeensupplierproduct')
         .then(suppliers => {
           expect(_.find(suppliers, {name: 'aberdeen supplier'})).to.exist;
+        });
+    });
+
+    it('returns the identifier of the linked product as metadata for suppliers that sell the product', () => {
+      return supplierQueries.findBySuppliedProduct('aberdeensupplierproduct')
+        .then(suppliers => {
+          const supplier = _.find(suppliers, {name: 'aberdeen supplier'});
+          expect(supplier._metadata).to.have.property('linked_product_id', '1');
         });
     });
 
