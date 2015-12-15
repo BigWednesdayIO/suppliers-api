@@ -32,7 +32,7 @@ deployment:
   dev:
     branch: master
     commands:
-      - OVERRIDE_IMAGE_TAG=dev gcloud_scripts/kubernetes_deploy.sh suppliers-api app=suppliers-api development ${PWD} ${PWD}/kubernetes/rc.json ${PWD}/kubernetes/service.json
+      - gcloud_scripts/kubernetes_deploy.sh suppliers-api app=suppliers-api development ${PWD} ${PWD}/kubernetes/rc.json ${PWD}/kubernetes/service.json
   prod:
     tag: /v.*/
     commands:
