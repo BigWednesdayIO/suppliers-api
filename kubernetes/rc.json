@@ -31,6 +31,22 @@
               {
                 "name": "GCLOUD_KEY",
                 "value": "{{GCLOUD_KEY}}"
+              },
+              {
+                "name": "AUTH0_CLIENT_SECRET",
+                "value": "{{AUTH0_CLIENT_SECRET}}"
+              },
+              {
+                "name": "AUTH0_CONNECTION",
+                "value": "{{AUTH0_CONNECTION}}"
+              },
+              {
+                "name": "AUTH0_DOMAIN",
+                "value": "{{AUTH0_DOMAIN}}"
+              },
+              {
+                "name": "AUTHO_CLIENT_ID",
+                "value": "{{AUTHO_CLIENT_ID}}"
               }
             ],
             "ports": [
