@@ -89,7 +89,10 @@ module.exports.register = (server, options, next) => {
       const page = request.query.page || 1;
       const offset = page === 1 ? 0 : (page - 1) * limit;
 
-      const query = datasetEntities.linkedProductQuery().offset(offset).limit(limit);
+      const query = datasetEntities.linkedProductQuery()
+        .hasAncestor(datasetEntities.supplierKey(request.params.supplierId))
+        .offset(offset)
+        .limit(limit);
 
       DatastoreModel.find(query)
         .then(_.partialRight(linkedProductMapper.toModelArray, request.query.expand))

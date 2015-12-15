@@ -94,6 +94,15 @@ describe('/suppliers/{id}/linked_products', () => {
       expect(getResponse.result).to.deep.equal(expectedResults);
     });
 
+    it('does not return linked products for other suppliers', () =>
+      specRequest({url: '/suppliers', method: 'POST', payload: supplierPayload})
+        .then(response => specRequest({
+          url: `${response.headers.location}/linked_products`,
+          method: 'GET',
+          headers: {authorization: signJwt({scope: [`supplier:${response.result.id}`]})}
+        }))
+        .then(response => expect(response.result).to.deep.equal([])));
+
     it('returns a custom page size', () =>
       specRequest({url: `/suppliers/${supplierId}/linked_products?hitsPerPage=3`, method: 'GET', headers: {authorization: token}})
         .then(response => {
