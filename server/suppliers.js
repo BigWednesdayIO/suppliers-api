@@ -52,7 +52,8 @@ const suppliersSchema = baseSupplierSchema.concat(Joi.object({
   id: Joi.string().required().description('Supplier identifier'),
   _metadata: Joi.object({
     created: Joi.date().required().description('Date the supplier was created'),
-    updated: Joi.date().required().description('Date the supplier was updated')
+    updated: Joi.date().required().description('Date the supplier was updated'),
+    linked_product_id: Joi.string().description('The identifier of a linked product that satisfied a search for suppliers using supplies_product parameter')
   }).meta({className: 'SupplierMetadata'})
 })).meta({
   className: 'Supplier'

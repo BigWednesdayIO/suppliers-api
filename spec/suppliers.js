@@ -193,27 +193,36 @@ describe('/suppliers', function () {
     });
 
     describe('who supply product', () => {
+      let linkedProductIds;
+
       beforeEach(() => {
+        linkedProductIds = [];
+
         return specRequest({
           url: `/suppliers/${createdSuppliers[0].id}/linked_products`,
           method: 'POST',
           headers: {authorization: tokens[createdSuppliers[0].id]},
           payload: linkedProductParameters
         })
-        .then(() => Promise.all([
-          specRequest({
+        .then(response => {
+          linkedProductIds.push(response.result.id);
+          return specRequest({
             url: `/suppliers/${createdSuppliers[1].id}/linked_products`,
             method: 'POST',
             headers: {authorization: tokens[createdSuppliers[1].id]},
             payload: linkedProductParameters
-          }),
-          specRequest({
+          });
+        })
+        .then(response => {
+          linkedProductIds.push(response.result.id);
+          return specRequest({
             url: `/suppliers/${createdSuppliers[1].id}/linked_products`,
             method: 'POST',
             headers: {authorization: tokens[createdSuppliers[1].id]},
             payload: _.assign({}, linkedProductParameters, {product_id: 'abc'})
-          })
-        ]));
+          });
+        })
+        .then(response => linkedProductIds.push(response.result.id));
       });
 
       it('filters out suppliers that do not supply the product', () => {
@@ -222,8 +231,21 @@ describe('/suppliers', function () {
           specRequest({url: '/suppliers?supplies_product=1', method: 'GET'})
         ])
         .then(_.spread((sellingAbc, selling1) => {
-          expect(sellingAbc.result).to.deep.equal([createdSuppliers[1]]);
-          expect(selling1.result).to.deep.equal([createdSuppliers[0], createdSuppliers[1]]);
+          const omitMetadata = r => _.omit(r, '_metadata');
+          expect(sellingAbc.result.map(omitMetadata)).to.deep.equal([createdSuppliers[1]].map(omitMetadata));
+          expect(selling1.result.map(omitMetadata)).to.deep.equal([createdSuppliers[0], createdSuppliers[1]].map(omitMetadata));
+        }));
+      });
+
+      it('returns the id of the linked product as metadata', () => {
+        return Promise.all([
+          specRequest({url: '/suppliers?supplies_product=abc', method: 'GET'}),
+          specRequest({url: '/suppliers?supplies_product=1', method: 'GET'})
+        ])
+        .then(_.spread((sellingAbc, selling1) => {
+          expect(sellingAbc.result[0]._metadata).to.have.property('linked_product_id', linkedProductIds[2]);
+          expect(selling1.result[0]._metadata).to.have.property('linked_product_id', linkedProductIds[0]);
+          expect(selling1.result[1]._metadata).to.have.property('linked_product_id', linkedProductIds[1]);
         }));
       });
     });
