@@ -12,7 +12,7 @@ const testProduct = {id: '2', name: 'product name', price: 15.00};
 
 describe('Linked product mapper', () => {
   beforeEach(() => {
-    nock(`http://${process.env.PRODUCTS_API_SVC_HOST}:${process.env.PRODUCTS_API_SVC_PORT}`)
+    nock(`http://${process.env.PRODUCTS_API_SVC_SERVICE_HOST}:${process.env.PRODUCTS_API_SVC_SERVICE_PORT}`)
       .get('/products?id[]=2')
       .reply(200, [testProduct])
       .get('/products?id[]=notfound')

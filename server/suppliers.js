@@ -14,7 +14,7 @@ const supplierStore = require('../lib/supplier_store');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
 
-const postcodesApi = `http://${process.env.POSTCODES_API_SVC_HOST}:${process.env.POSTCODES_API_SVC_PORT}`;
+const postcodesApi = `http://${process.env.POSTCODES_API_SVC_SERVICE_HOST}:${process.env.POSTCODES_API_SVC_SERVICE_PORT}`;
 
 const getDeliveryPostcodeData = (req, reply) => {
   if (!req.query.deliver_to) {
