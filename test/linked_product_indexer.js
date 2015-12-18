@@ -11,7 +11,7 @@ const indexingApi = `http://${process.env.ORDERABLE_SEARCH_API_SVC_SERVICE_HOST}
 
 require('../lib/linked_product_indexer')(linkedProductModel);
 
-describe.only('Linked product indexer', () => {
+describe('Linked product indexer', () => {
   let indexingRequest;
   let indexingRequestBody;
   let consoleErrorSpy;
