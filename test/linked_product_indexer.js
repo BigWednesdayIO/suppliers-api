@@ -6,6 +6,7 @@ const nock = require('nock');
 const expect = require('chai').expect;
 
 const linkedProductModel = new events.EventEmitter();
+const indexingApi = `http://${process.env.ORDERABLE_INDEXING_API_SVC_SERVICE_HOST}:${process.env.ORDERABLE_INDEXING_API_SVC_SERVICE_PORT}`;
 
 require('../lib/linked_product_indexer')(linkedProductModel);
 
@@ -14,7 +15,7 @@ describe('Linked product indexer', () => {
   let indexingRequestBody;
 
   beforeEach(() => {
-    indexingRequest = nock('http://localhost:8888')
+    indexingRequest = nock(indexingApi)
       .post('/indexing_jobs')
       .reply(200, (uri, body) => indexingRequestBody = JSON.parse(body));
   });
