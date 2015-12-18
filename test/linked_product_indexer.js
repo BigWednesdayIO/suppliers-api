@@ -2,6 +2,7 @@
 
 const events = require('events');
 const nock = require('nock');
+const sinon = require('sinon');
 
 const expect = require('chai').expect;
 
@@ -10,30 +11,39 @@ const indexingApi = `http://${process.env.ORDERABLE_INDEXING_API_SVC_SERVICE_HOS
 
 require('../lib/linked_product_indexer')(linkedProductModel);
 
-describe('Linked product indexer', () => {
+describe.only('Linked product indexer', () => {
   let indexingRequest;
   let indexingRequestBody;
+  let consoleErrorSpy;
 
   beforeEach(() => {
     indexingRequest = nock(indexingApi)
       .post('/indexing_jobs')
-      .reply(200, (uri, body) => indexingRequestBody = JSON.parse(body));
+      .reply(202, (uri, body) => indexingRequestBody = JSON.parse(body));
+
+    consoleErrorSpy = sinon.spy(console, 'error');
   });
 
-  afterEach(() => nock.cleanAll());
+  afterEach(() => {
+    nock.cleanAll();
+    consoleErrorSpy.restore();
+  });
 
   const model = {id: 'lp1', price: 12, was_price: 21, product_id: 'p1'};
   const key = {path: ['Supplier', 's1', 'SupplierLinkedProduct', 'lp1']};
 
   ['inserted', 'updated', 'deleted'].forEach(e => {
     describe(`on ${e}`, () => {
-      beforeEach(done => {
+      const emitEvent = () => {
         if (e === 'deleted') {
           linkedProductModel.emit(e, key);
         } else {
           linkedProductModel.emit(e, model, key);
         }
+      };
 
+      beforeEach(done => {
+        emitEvent();
         setImmediate(done);
       });
 
@@ -89,6 +99,32 @@ describe('Linked product indexer', () => {
           expect(indexingRequestBody.data).to.have.property('supplier_id', 's1');
         });
       }
+
+      it('logs errors making indexing request to console.error', done => {
+        nock(indexingApi)
+          .post('/indexing_jobs')
+          .replyWithError('A non-HTTP error');
+
+        emitEvent();
+        setTimeout(() => {
+          sinon.assert.calledOnce(consoleErrorSpy);
+          expect(consoleErrorSpy.lastCall.args[0]).to.equal('Failed to make indexing request for linked product - A non-HTTP error');
+          done();
+        }, 500);
+      });
+
+      it('logs non-202 responses to console.error', done => {
+        nock(indexingApi)
+          .post('/indexing_jobs')
+          .reply(500, {message: 'Internal Server Error'});
+
+        emitEvent();
+        setTimeout(() => {
+          sinon.assert.calledOnce(consoleErrorSpy);
+          expect(consoleErrorSpy.lastCall.args[0]).to.equal('Unexpected HTTP response 500 for linked product indexing request - {"message":"Internal Server Error"}');
+          done();
+        }, 500);
+      });
     });
   });
 });
