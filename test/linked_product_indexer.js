@@ -7,7 +7,7 @@ const sinon = require('sinon');
 const expect = require('chai').expect;
 
 const linkedProductModel = new events.EventEmitter();
-const indexingApi = `http://${process.env.ORDERABLE_INDEXING_API_SVC_SERVICE_HOST}:${process.env.ORDERABLE_INDEXING_API_SVC_SERVICE_PORT}`;
+const indexingApi = `http://${process.env.ORDERABLE_SEARCH_API_SVC_SERVICE_HOST}:${process.env.ORDERABLE_SEARCH_API_SVC_SERVICE_PORT}`;
 
 require('../lib/linked_product_indexer')(linkedProductModel);
 

@@ -15,8 +15,8 @@ module.exports = function (grunt) {
       test: {
         src: '.env',
         RESPONSE_FAIL_ACTION: 'error',
-        ORDERABLE_INDEXING_API_SVC_SERVICE_HOST: 'localhost',
-        ORDERABLE_INDEXING_API_SVC_SERVICE_PORT: 9999
+        ORDERABLE_SEARCH_API_SVC_SERVICE_HOST: 'localhost',
+        ORDERABLE_SEARCH_API_SVC_SERVICE_PORT: 9999
       }
     },
     mochaTest: {
