@@ -7,8 +7,11 @@ const Joi = require('joi');
 const dataset = require('../lib/dataset');
 const datasetEntities = require('../lib/dataset_entities');
 const linkedProductMapper = require('../lib/linked_product_mapper');
+const linkedProductIndexer = require('../lib/linked_product_indexer');
 
 const DatastoreModel = require('gcloud-datastore-model')(dataset);
+
+linkedProductIndexer(DatastoreModel);
 
 const verifySupplier = (request, reply) => {
   const supplierId = request.params.supplierId;
