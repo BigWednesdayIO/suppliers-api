@@ -47,6 +47,10 @@
               {
                 "name": "AUTHO_CLIENT_ID",
                 "value": "{{AUTHO_CLIENT_ID}}"
+              },
+              {
+                "name": "BIGWEDNESDAY_JWT",
+                "value": "{{BIGWEDNESDAY_JWT}}"
               }
             ],
             "ports": [
