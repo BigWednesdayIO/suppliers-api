@@ -113,7 +113,7 @@ after(function () {
   .catch(err => {
     console.error(err);
 
-    if (err.error !== 'user_remove_not_found') {
+    if (!(err.name === 'ApiError' && err.statusCode === 404)) {
       throw err;
     }
   });
