@@ -77,4 +77,11 @@ describe('Linked product mapper', () => {
         expect(models[2]).to.not.have.property('product');
         expect(models[2]).to.have.property('product_id');
       }));
+
+  it('does nothing for an empty set of linked products', () =>
+    mapper.toModelArray([], ['product'])
+      .then(models => {
+        expect(models).to.be.an('array');
+        expect(models).to.be.empty;
+      }));
 });
