@@ -20,3 +20,5 @@ cd gcd-v1beta2-rev1-3.0.2
 ./gcd.sh updateindexes --auth_mode=oauth2 --dataset_id_override=[gcloud-project-id] /opt/gcd/data/
 ```
 
+https://cloud.google.com/datastore/docs/tools/indexconfig
+
