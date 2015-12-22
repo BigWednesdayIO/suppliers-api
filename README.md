@@ -13,7 +13,7 @@ The docker file will source `.env` file if it is present in the project director
 
 ## Updating Datastore indexes
 
-To update the indexes in Google Cloud Datastore, using the auto-generated indexes from the dev gcd tool. Run the following script from the gcd container:
+To update the indexes in Google Cloud Datastore, using the auto-generated indexes from the dev gcd tool, run the following script from the gcd container:
 
 ```
 cd gcd-v1beta2-rev1-3.0.2
