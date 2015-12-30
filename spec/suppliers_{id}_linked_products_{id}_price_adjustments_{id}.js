@@ -144,4 +144,50 @@ describe('/suppliers/{id}/linked_products/{id}/price_adjustments/{id}', () => {
         });
     });
   });
+
+  describe('delete', () => {
+    let deleteResponse;
+
+    beforeEach(() =>
+      specRequest({url: createResponse.headers.location, method: 'DELETE', headers: {authorization: token}})
+        .then(response => deleteResponse = response));
+
+    it('returns http 204', () => {
+      expect(deleteResponse.statusCode).to.equal(204);
+    });
+
+    it('returns nothing', () => {
+      expect(deleteResponse.result).to.not.exist;
+    });
+
+    it('deletes the resource', () =>
+      specRequest({url: createResponse.headers.location, method: 'GET', headers: {authorization: token}})
+        .then(response => expect(response.statusCode).to.equal(404)));
+
+    it('returns http 404 when supplier does not exist', () =>
+      specRequest({url: '/suppliers/abc/linked_products/1/price_adjustments/1', method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:abc']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+          expect(response.result).to.have.property('message', 'Supplier "abc" not found.');
+        }));
+
+    it('returns http 404 when linked product does not exist', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products/1/price_adjustments/1`, method: 'DELETE', headers: {authorization: token}})
+        .then(response => {
+          expect(response.statusCode).to.equal(404);
+          expect(response.result).to.have.property('message', `Linked Product "1" not found for Supplier "${supplierId}".`);
+        }));
+
+    it('returns http 404 when price adjustment does not exist', () =>
+      specRequest({url: `/suppliers/${supplierId}/linked_products/${linkedProductId}/price_adjustments/1`, method: 'DELETE', headers: {authorization: token}})
+        .then(response => expect(response.statusCode).to.equal(404)));
+
+    it('returns http 403 when deleting linked product without correct scope', () => {
+      return specRequest({url: createResponse.headers.location, method: 'DELETE', headers: {authorization: signJwt({scope: ['supplier:555']})}})
+        .then(response => {
+          expect(response.statusCode).to.equal(403);
+          expect(response.result.message).match(/Insufficient scope/);
+        });
+    });
+  });
 });

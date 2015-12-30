@@ -194,6 +194,38 @@ module.exports.register = (server, options, next) => {
     }
   });
 
+  server.route({
+    method: 'DELETE',
+    path: '/suppliers/{supplierId}/linked_products/{linkedProductId}/price_adjustments/{id}',
+    handler(req, reply) {
+      const key = entities.priceAdjustmentKey(req.params.supplierId, req.params.linkedProductId, req.params.id);
+
+      datastoreModel.delete(key)
+        .then(() => reply().code(204), err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
+          }
+
+          reply.error(err);
+        });
+    },
+    config: {
+      tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
+      pre: [{method: verifySupplierLinkedProduct}],
+      validate: {
+        params: {
+          supplierId: Joi.string().required().description('Supplier identifier'),
+          linkedProductId: Joi.string().required().description('Linked product identifier'),
+          id: Joi.string().required().description('Price adjustment identifier')
+        }
+      }
+    }
+  });
+
   next();
 };
 
