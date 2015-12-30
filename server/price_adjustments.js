@@ -144,6 +144,10 @@ module.exports.register = (server, options, next) => {
         .offset(offset)
         .limit(limit);
 
+      if (req.query.price_adjustment_group_id) {
+        query.filter('price_adjustment_group_id =', req.query.price_adjustment_group_id);
+      }
+
       datastoreModel.find(query)
         .then(reply)
         .catch(err => {
@@ -165,7 +169,8 @@ module.exports.register = (server, options, next) => {
         },
         query: {
           hitsPerPage: Joi.number().integer().min(1).max(50).description('Number of price adjustments to return for a page'),
-          page: Joi.number().integer().min(1).description('The page number to return')
+          page: Joi.number().integer().min(1).description('The page number to return'),
+          price_adjustment_group_id: Joi.string().description('A price adjustment group for filtering')
         }
       },
       response: {

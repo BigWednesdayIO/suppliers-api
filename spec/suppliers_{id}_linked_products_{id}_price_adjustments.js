@@ -137,6 +137,10 @@ describe('/suppliers/{id}/linked_products/{id}/price_adjustments', () => {
         expect(fifthPage.result).to.be.empty;
       })));
 
+    it('filters by price adjustment group', () =>
+      specRequest({url: `${linkedProductResponse.headers.location}/price_adjustments?price_adjustment_group_id=1`, method: 'GET', headers: {authorization: token}})
+        .then(response => expect(response.result).to.deep.equal([createResponses[0].result])));
+
     it('returns http 403 when getting price adjustment without correct scope', () =>
       specRequest({url: `${linkedProductResponse.headers.location}/price_adjustments`, method: 'GET', headers: {authorization: signJwt({scope: ['supplier:555']})}})
         .then(response => {
