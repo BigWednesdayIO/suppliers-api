@@ -20,6 +20,8 @@ const plugins = [{
 }, {
   register: require('./linked_products')
 }, {
+  register: require('./price_adjustments')
+}, {
   register: Swaggered,
   options: {
     auth: false,

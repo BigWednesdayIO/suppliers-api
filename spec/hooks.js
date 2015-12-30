@@ -76,7 +76,8 @@ afterEach(() => {
   return Promise.all([
     module.exports.deleteTestData('Supplier'),
     module.exports.deleteTestData('Depot'),
-    module.exports.deleteTestData('SupplierLinkedProduct')
+    module.exports.deleteTestData('SupplierLinkedProduct'),
+    module.exports.deleteTestData('SupplierProductPriceAdjustment')
   ]);
 });
 
