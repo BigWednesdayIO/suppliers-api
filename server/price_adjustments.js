@@ -6,6 +6,23 @@ const Joi = require('joi');
 const entities = require('../lib/dataset_entities');
 const datastoreModel = require('gcloud-datastore-model')(require('../lib/dataset'));
 
+const attributes = {
+  price_adjustment_group_id: Joi.string().required().description('Identifier of the group the adjustment applies to'),
+  type: Joi.string().required().valid(['value_override', 'value_adjustment', 'percentage_adjustment'])
+    .description('The type of adjustment'),
+  amount: Joi.number().precision(2).positive().required().when('type', {is: 'value_adjustment', then: Joi.number().precision(2)}).description('The percentage or value amount to adjust price by')
+};
+
+const requestSchema = Joi.object(attributes).meta({className: 'PriceAdjustmentParameterts'});
+
+const responseSchema = Joi.object(Object.assign({
+  id: Joi.string().required().description('The price adjustment identifier'),
+  _metadata: Joi.object({
+    created: Joi.date().required().description('Date the price adjustment was created'),
+    updated: Joi.date().required().description('Date the price adjustment was updated')
+  }).meta({className: 'PriceAdjustmentMetaData'})
+}, attributes)).meta({className: 'PriceAdjustment'});
+
 const verifySupplierLinkedProduct = (request, reply) => {
   const supplierId = request.params.supplierId;
   const linkedProductId = request.params.linkedProductId;
@@ -65,11 +82,13 @@ module.exports.register = (server, options, next) => {
         params: {
           supplierId: Joi.string().required().description('Supplier identifier'),
           linkedProductId: Joi.string().required().description('Linked product identifier')
-        }
+        },
+        payload: requestSchema.description('The price adjustment to create'),
+        options: {convert: false}
       },
       response: {
         status: {
-          201: Joi.object().description('The created price adjustment').meta({className: 'PriceAdjustment'})
+          201: responseSchema.description('The created price adjustment')
         }
       }
     }
@@ -106,7 +125,7 @@ module.exports.register = (server, options, next) => {
       },
       response: {
         status: {
-          200: Joi.object().description('A price adjustment').meta({className: 'PriceAdjustment'})
+          200: responseSchema.description('A price adjustment')
         }
       }
     }
@@ -151,7 +170,7 @@ module.exports.register = (server, options, next) => {
       },
       response: {
         status: {
-          200: Joi.array().items(Joi.object().description('A price adjustment').meta({className: 'PriceAdjustment'})).description('An array of price adjustments')
+          200: Joi.array().items(responseSchema.description('A price adjustment')).description('An array of price adjustments')
         }
       }
     }
@@ -184,11 +203,13 @@ module.exports.register = (server, options, next) => {
           supplierId: Joi.string().required().description('Supplier identifier'),
           linkedProductId: Joi.string().required().description('Linked product identifier'),
           id: Joi.string().required().description('Price adjustment identifier')
-        }
+        },
+        payload: requestSchema.description('The updated price adjustment'),
+        options: {convert: false}
       },
       response: {
         status: {
-          200: Joi.object().description('A price adjustment').meta({className: 'PriceAdjustment'})
+          200: responseSchema.description('The updated price adjustment')
         }
       }
     }
