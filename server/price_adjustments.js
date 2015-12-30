@@ -112,6 +112,51 @@ module.exports.register = (server, options, next) => {
     }
   });
 
+  server.route({
+    method: 'GET',
+    path: '/suppliers/{supplierId}/linked_products/{linkedProductId}/price_adjustments',
+    handler(req, reply) {
+      const limit = req.query.hitsPerPage || 10;
+      const page = req.query.page || 1;
+      const offset = page === 1 ? 0 : (page - 1) * limit;
+
+      const query = entities.priceAdjustmentQuery()
+        .hasAncestor(entities.linkedProductKey(req.params.supplierId, req.params.linkedProductId))
+        .offset(offset)
+        .limit(limit);
+
+      datastoreModel.find(query)
+        .then(reply)
+        .catch(err => {
+          console.error(err);
+          reply.badImplementation();
+        });
+    },
+    config: {
+      tags: ['api'],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
+      pre: [{method: verifySupplierLinkedProduct}],
+      validate: {
+        params: {
+          supplierId: Joi.string().required().description('Supplier identifier'),
+          linkedProductId: Joi.string().required().description('Linked product identifier')
+        },
+        query: {
+          hitsPerPage: Joi.number().integer().min(1).max(50).description('Number of price adjustments to return for a page'),
+          page: Joi.number().integer().min(1).description('The page number to return')
+        }
+      },
+      response: {
+        status: {
+          200: Joi.array().items(Joi.object().description('A price adjustment').meta({className: 'PriceAdjustment'})).description('An array of price adjustments')
+        }
+      }
+    }
+  });
+
   next();
 };
 

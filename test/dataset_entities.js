@@ -152,4 +152,12 @@ describe('Dataset entities', () => {
   it('linkedProductQuery sets a default order on created date', () => {
     expect(datasetEntities.linkedProductQuery().orders).to.deep.equal([{name: '_metadata_created', sign: '+'}]);
   });
+
+  it('priceAdjustmentQuery generates a query for the SupplierProductPriceAdjustment kind', () => {
+    expect(datasetEntities.priceAdjustmentQuery().kinds).to.deep.equal(['SupplierProductPriceAdjustment']);
+  });
+
+  it('priceAdjustmentQuery sets a default order on created date', () => {
+    expect(datasetEntities.priceAdjustmentQuery().orders).to.deep.equal([{name: '_metadata_created', sign: '+'}]);
+  });
 });
