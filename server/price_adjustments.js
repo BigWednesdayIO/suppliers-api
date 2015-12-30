@@ -75,6 +75,43 @@ module.exports.register = (server, options, next) => {
     }
   });
 
+  server.route({
+    method: 'GET',
+    path: '/suppliers/{supplierId}/linked_products/{linkedProductId}/price_adjustments/{id}',
+    handler(req, reply) {
+      const key = entities.priceAdjustmentKey(req.params.supplierId, req.params.linkedProductId, req.params.id);
+
+      datastoreModel.get(key)
+        .then(reply, err => {
+          if (err.name === 'EntityNotFoundError') {
+            return reply.notFound();
+          }
+
+          reply.error(err);
+        });
+    },
+    config: {
+      tags: ['api'],
+      pre: [{method: verifySupplierLinkedProduct}],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
+      validate: {
+        params: {
+          supplierId: Joi.string().required().description('Supplier identifier'),
+          linkedProductId: Joi.string().required().description('Linked product identifier'),
+          id: Joi.string().required().description('Price adjustment identifier')
+        }
+      },
+      response: {
+        status: {
+          200: Joi.object().description('A price adjustment').meta({className: 'PriceAdjustment'})
+        }
+      }
+    }
+  });
+
   next();
 };
 
