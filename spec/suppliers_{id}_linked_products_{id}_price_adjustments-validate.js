@@ -11,7 +11,7 @@ describe('/suppliers/{id}/linked_products/{id}/price_adjustments - validation', 
   const token = signJwt({scope: ['supplier:1']});
 
   [{method: 'POST', url: baseUri}, {method: 'PUT', url: `${baseUri}/1`}].forEach(request => {
-    ['price_adjustment_group_id', 'type', 'amount'].forEach(attribute => {
+    ['price_adjustment_group_id', 'type', 'amount', 'start_date'].forEach(attribute => {
       it(`requires ${attribute} for ${request.method} request`, () =>
         specRequest({url: request.url, method: request.method, payload: _.omit(priceAdjustmentParameters, attribute), headers: {authorization: token}})
           .then(response => {
@@ -26,6 +26,15 @@ describe('/suppliers/{id}/linked_products/{id}/price_adjustments - validation', 
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal(`child "${attribute}" fails because ["${attribute}" must be a string]`);
+          }));
+    });
+
+    ['start_date', 'end_date'].forEach(attribute => {
+      it(`requires ${attribute} to be a date for ${request.method} request`, () =>
+        specRequest({url: request.url, method: request.method, payload: Object.assign({}, priceAdjustmentParameters, {[attribute]: 'abc'}), headers: {authorization: token}})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal(`child "${attribute}" fails because ["${attribute}" must be a number of milliseconds or valid date string]`);
           }));
     });
 
@@ -48,20 +57,6 @@ describe('/suppliers/{id}/linked_products/{id}/price_adjustments - validation', 
         .then(response => {
           expect(response.statusCode).to.equal(400);
           expect(response.result).to.have.property('message', `child "amount" fails because ["amount" must be a positive number]`);
-        }));
-
-    it(`requires amount to have no more than 2 decimal places when type is value_override for ${request.method} request`, () =>
-      specRequest({url: request.url, method: request.method, headers: {authorization: token}, payload: Object.assign({}, priceAdjustmentParameters, {type: 'value_override', amount: 1.001})})
-        .then(response => {
-          expect(response.statusCode).to.equal(400);
-          expect(response.result).to.have.property('message', `child "amount" fails because ["amount" must have no more than 2 decimal places]`);
-        }));
-
-    it(`requires amount to have no more than 2 decimal places when type is value_adjustment for ${request.method} request`, () =>
-      specRequest({url: request.url, method: request.method, headers: {authorization: token}, payload: Object.assign({}, priceAdjustmentParameters, {type: 'value_adjustment', amount: -1.001})})
-        .then(response => {
-          expect(response.statusCode).to.equal(400);
-          expect(response.result).to.have.property('message', `child "amount" fails because ["amount" must have no more than 2 decimal places]`);
         }));
 
     it(`requires amount attribute to be a positive number when type is percentage_adjustment for ${request.method} request`, () =>
