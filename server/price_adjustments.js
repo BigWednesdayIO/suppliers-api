@@ -11,7 +11,7 @@ const attributes = {
   price_adjustment_group_id: Joi.string().required().description('Identifier of the group the adjustment applies to'),
   type: Joi.string().required().valid(['value_override', 'value_adjustment', 'percentage_adjustment'])
     .description('The type of adjustment'),
-  amount: Joi.number().precision(2).positive().required().when('type', {is: 'value_adjustment', then: Joi.number().precision(2)}).description('The percentage or value amount to adjust price by'),
+  amount: Joi.any().required().when('type', {is: 'value_adjustment', then: Joi.number().precision(2), otherwise: Joi.number().precision(2).positive()}).description('The percentage or value amount to adjust price by'),
   start_date: Joi.date().required().description('Date the price adjustment comes into effect'),
   end_date: Joi.date().description('Date the price adjustment ceases to have effect')
 };
