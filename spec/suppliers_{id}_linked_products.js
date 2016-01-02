@@ -67,7 +67,9 @@ describe('/suppliers/{id}/linked_products', () => {
     });
   });
 
-  describe('get', () => {
+  describe('get', function () {
+    this.timeout(5000);
+
     let createResponses;
     let getResponse;
 
