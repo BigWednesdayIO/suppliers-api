@@ -1,5 +1,6 @@
 'use strict';
 
+const _ = require('lodash');
 const cuid = require('cuid');
 const Joi = require('joi');
 
@@ -21,9 +22,24 @@ const responseSchema = Joi.object(Object.assign({
   id: Joi.string().required().description('The price adjustment identifier'),
   _metadata: Joi.object({
     created: Joi.date().required().description('Date the price adjustment was created'),
-    updated: Joi.date().required().description('Date the price adjustment was updated')
+    updated: Joi.date().required().description('Date the price adjustment was updated'),
+    linked_product_id: Joi.string().description('The identifier of the linked product the adjustment is associated with')
   }).meta({className: 'PriceAdjustmentMetaData'})
 }, attributes)).meta({className: 'PriceAdjustment'});
+
+const verifySupplier = (request, reply) => {
+  const supplierId = request.params.supplierId;
+
+  datastoreModel.get(entities.supplierKey(supplierId))
+    .then(reply, err => {
+      if (err.name === 'EntityNotFoundError') {
+        return reply.notFound(`Supplier "${supplierId}" not found.`);
+      }
+
+      console.error(err);
+      return reply.badImplementation();
+    });
+};
 
 const verifySupplierLinkedProduct = (request, reply) => {
   const supplierId = request.params.supplierId;
@@ -63,7 +79,66 @@ const verifySupplierLinkedProduct = (request, reply) => {
     });
 };
 
+const adjustmentHasNotEnded = (adjustment, date) =>
+  !adjustment.end_date || adjustment.end_date >= date;
+
 module.exports.register = (server, options, next) => {
+  server.route({
+    method: 'GET',
+    path: '/suppliers/{supplierId}/price_adjustments',
+    handler(req, reply) {
+      const supplierKey = entities.supplierKey(req.params.supplierId);
+      const query = entities.priceAdjustmentQuery().hasAncestor(supplierKey);
+
+      query.orders = [];
+
+      query.filter('start_date <=', req.query.date)
+        .filter('price_adjustment_group_id =', req.query.price_adjustment_group_id)
+        .order('start_date')
+        .order('_metadata_created');
+
+      datastoreModel.find(query)
+        .then(startedAdjustments => {
+          // datastore cannot query with OR logic so additional filtering required
+          const adjustments = startedAdjustments
+            .filter(a =>
+              adjustmentHasNotEnded(a, req.query.date) &&
+              _.any(req.query.linked_product_id, id => id === a._key.path[3]))
+            .map(a => {
+              const mapped = Object.assign({}, a);
+              mapped._metadata.linked_product_id = a._key.path[3];
+
+              return mapped;
+            });
+
+          reply(adjustments);
+        }, reply.error.bind(reply));
+    },
+    config: {
+      tags: ['api'],
+      pre: [{method: verifySupplier}],
+      auth: {
+        strategy: 'jwt',
+        scope: ['supplier:{params.supplierId}', 'admin']
+      },
+      validate: {
+        params: {
+          supplierId: Joi.string().required().description('Supplier identifier')
+        },
+        query: {
+          price_adjustment_group_id: Joi.string().required().description('Identifier of the price adjustment group to filter by'),
+          date: Joi.date().required().description('Date of price adjustments to filter by'),
+          linked_product_id: Joi.array().items(Joi.string()).required().description('Linked product ids to filter by')
+        }
+      },
+      response: {
+        status: {
+          200: Joi.array().items(responseSchema.description('A price adjustment')).description('An array of price adjustments')
+        }
+      }
+    }
+  });
+
   server.route({
     method: 'POST',
     path: '/suppliers/{supplierId}/linked_products/{linkedProductId}/price_adjustments',
