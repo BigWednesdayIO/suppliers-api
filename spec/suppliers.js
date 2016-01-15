@@ -23,7 +23,10 @@ describe('/suppliers', function () {
       createSupplierPayload = {
         name: 'A Supplier',
         email: `${cuid()}@bigwednesday.io`,
-        password: '8u{F0*W1l5'
+        password: '8u{F0*W1l5',
+        facebook: 'coventgarden.supply',
+        twitter: '@garden_covent',
+        website: 'http://www.coventgardensupply.co.uk/'
       };
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
@@ -99,6 +102,39 @@ describe('/suppliers', function () {
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
+          });
+      });
+
+      it('requires facebook to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'facebook');
+        payload.facebook = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "facebook" fails because ["facebook" must be a string]');
+          });
+      });
+
+      it('requires twitter to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'twitter');
+        payload.twitter = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "twitter" fails because ["twitter" must be a string]');
+          });
+      });
+
+      it('requires website to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'website');
+        payload.website = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "website" fails because ["website" must be a string]');
           });
       });
 
