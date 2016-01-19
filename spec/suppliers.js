@@ -23,6 +23,7 @@ describe('/suppliers', function () {
       createSupplierPayload = {
         name: 'A Supplier',
         email: `${cuid()}@bigwednesday.io`,
+        about: 'Lorem ipsum dolor sit amet...'
         password: '8u{F0*W1l5',
         facebook: 'coventgarden.supply',
         twitter: '@garden_covent',
@@ -102,6 +103,17 @@ describe('/suppliers', function () {
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "name" fails because ["name" must be a string]');
+          });
+      });
+
+      it('requires about to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'about');
+        payload.about = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "about" fails because ["about" must be a string]');
           });
       });
 

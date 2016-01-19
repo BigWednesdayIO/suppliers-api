@@ -46,6 +46,7 @@ const getDeliveryPostcodeData = (req, reply) => {
 const baseSupplierSchema = Joi.object({
   email: Joi.string().email().required().description('Supplier email'),
   name: Joi.string().required().description('Supplier name'),
+  about: Joi.string().description('About the supplier'),
   facebook: Joi.string().description('Facebook'),
   twitter: Joi.string().description('Twitter'),
   website: Joi.string().description('Website')
