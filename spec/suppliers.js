@@ -23,7 +23,7 @@ describe('/suppliers', function () {
       createSupplierPayload = {
         name: 'A Supplier',
         email: `${cuid()}@bigwednesday.io`,
-        about: 'Lorem ipsum dolor sit amet...'
+        about: 'Lorem ipsum dolor sit amet...',
         password: '8u{F0*W1l5',
         facebook: 'coventgarden.supply',
         twitter: '@garden_covent',
