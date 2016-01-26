@@ -27,7 +27,9 @@ describe('/suppliers', function () {
         password: '8u{F0*W1l5',
         facebook: 'coventgarden.supply',
         twitter: '@garden_covent',
-        website: 'http://www.coventgardensupply.co.uk/'
+        website: 'http://www.coventgardensupply.co.uk/',
+        has_memberships: true,
+        purchase_restrictions: 'none'
       };
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
@@ -147,6 +149,28 @@ describe('/suppliers', function () {
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "website" fails because ["website" must be a string]');
+          });
+      });
+
+      it('requires has_memberships to be a boolean', () => {
+        const payload = _.omit(createSupplierPayload, 'has_memberships');
+        payload.has_memberships = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "has_memberships" fails because ["has_memberships" must be a boolean]');
+          });
+      });
+
+      it('requires purchase_restrictions to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'purchase_restrictions');
+        payload.purchase_restrictions = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "purchase_restrictions" fails because ["purchase_restrictions" must be a string]');
           });
       });
 

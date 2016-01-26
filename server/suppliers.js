@@ -49,7 +49,9 @@ const baseSupplierSchema = Joi.object({
   about: Joi.string().description('About the supplier'),
   facebook: Joi.string().description('Facebook'),
   twitter: Joi.string().description('Twitter'),
-  website: Joi.string().description('Website')
+  website: Joi.string().description('Website'),
+  has_memberships: Joi.boolean().description('Supplier has enabled memberships'),
+  purchase_restrictions: Joi.string().description('Whether anybody, or only members can buy fromt the supplier')
 });
 
 const suppliersSchema = baseSupplierSchema.concat(Joi.object({
