@@ -28,6 +28,10 @@ describe('/suppliers', function () {
         facebook: 'coventgarden.supply',
         twitter: '@garden_covent',
         website: 'http://www.coventgardensupply.co.uk/',
+        initials: 'As',
+        colour: '#F44336',
+        banner_image: 'http://lorempixel.com/1000/200/food/10/',
+        logo: 'http://placehold.it/80x80?text=A Supplier',
         has_memberships: true,
         purchase_restrictions: 'none'
       };
@@ -149,6 +153,50 @@ describe('/suppliers', function () {
           .then(response => {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "website" fails because ["website" must be a string]');
+          });
+      });
+
+      it('requires initials to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'initials');
+        payload.initials = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "initials" fails because ["initials" must be a string]');
+          });
+      });
+
+      it('requires colour to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'colour');
+        payload.colour = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "colour" fails because ["colour" must be a string]');
+          });
+      });
+
+      it('requires banner_image to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'banner_image');
+        payload.banner_image = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "banner_image" fails because ["banner_image" must be a string]');
+          });
+      });
+
+      it('requires logo to be a string', () => {
+        const payload = _.omit(createSupplierPayload, 'logo');
+        payload.logo = 123;
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "logo" fails because ["logo" must be a string]');
           });
       });
 
