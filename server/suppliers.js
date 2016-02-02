@@ -52,8 +52,8 @@ const baseSupplierSchema = Joi.object({
   website: Joi.string().description('Website'),
   ititials: Joi.string().description('Initials for material design avatar placeholder'),
   colour: Joi.string().description('Colour for material design avatar placeholder'),
-  banner_image: Joi.string.description('Banner image for search results'),
-  logo: Joi.string.description('Supplier logo'),
+  banner_image: Joi.string().description('Banner image for search results'),
+  logo: Joi.string().description('Supplier logo'),
   has_memberships: Joi.boolean().description('Supplier has enabled memberships'),
   purchase_restrictions: Joi.string().description('Whether anybody, or only members can buy fromt the supplier')
 });
