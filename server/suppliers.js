@@ -50,7 +50,7 @@ const baseSupplierSchema = Joi.object({
   facebook: Joi.string().description('Facebook'),
   twitter: Joi.string().description('Twitter'),
   website: Joi.string().description('Website'),
-  ititials: Joi.string().description('Initials for material design avatar placeholder'),
+  initials: Joi.string().description('Initials for material design avatar placeholder'),
   colour: Joi.string().description('Colour for material design avatar placeholder'),
   banner_image: Joi.string().description('Banner image for search results'),
   logo: Joi.string().description('Supplier logo'),
