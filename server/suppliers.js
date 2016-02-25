@@ -55,7 +55,9 @@ const baseSupplierSchema = Joi.object({
   banner_image: Joi.string().description('Banner image for search results'),
   logo: Joi.string().description('Supplier logo'),
   has_memberships: Joi.boolean().description('Supplier has enabled memberships'),
-  purchase_restrictions: Joi.string().description('Whether anybody, or only members can buy fromt the supplier')
+  purchase_restrictions: Joi.string().description('Whether anybody, or only members can buy fromt the supplier'),
+  delivery_charge: Joi.number().min(0).description('How much supplier charges for a delivery'),
+  delivery_lead_time: Joi.number().integer().min(1).description('Number of days delivery takes (1 being delivered tomorrow)')
 });
 
 const suppliersSchema = baseSupplierSchema.concat(Joi.object({
