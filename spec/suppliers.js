@@ -33,7 +33,9 @@ describe('/suppliers', function () {
         banner_image: 'http://lorempixel.com/1000/200/food/10/',
         logo: 'http://placehold.it/80x80?text=A Supplier',
         has_memberships: true,
-        purchase_restrictions: 'none'
+        purchase_restrictions: 'none',
+        delivery_charge: 0,
+        delivery_lead_time: 1
       };
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
@@ -220,6 +222,65 @@ describe('/suppliers', function () {
             expect(response.statusCode).to.equal(400);
             expect(response.result.message).to.equal('child "purchase_restrictions" fails because ["purchase_restrictions" must be a string]');
           });
+      });
+
+      describe('delivery charge', () => {
+        it('requires a number', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_charge');
+          payload.delivery_charge = '£3.99';
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_charge" fails because ["delivery_charge" must be a number]');
+            });
+        });
+
+        it('is zero or more', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_charge');
+          payload.delivery_charge = -3.99;
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_charge" fails because ["delivery_charge" must be larger than or equal to 0]');
+            });
+        });
+      });
+
+      describe('delivery lead time', () => {
+        it('requires a number', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_lead_time');
+          payload.delivery_lead_time = 'one day';
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_lead_time" fails because ["delivery_lead_time" must be a number]');
+            });
+        });
+
+        it('requires an integer', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_lead_time');
+          payload.delivery_lead_time = 2.5;
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_lead_time" fails because ["delivery_lead_time" must be an integer]');
+            });
+        });
+
+        it('requires a value of at least 1', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_lead_time');
+          payload.delivery_lead_time = 0;
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_lead_time" fails because ["delivery_lead_time" must be larger than or equal to 1]');
+            });
+        });
       });
 
       it('does not allow _metadata', () => {
