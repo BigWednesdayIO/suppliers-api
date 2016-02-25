@@ -21,18 +21,15 @@ module.exports = function (grunt) {
       }
     },
     mochaTest: {
+      options: {
+        reporter: 'spec',
+        clearRequireCache: false,
+        timeout: 3000
+      },
       test: {
-        options: {
-          reporter: 'spec',
-          clearRequireCache: false
-        },
         src: ['<%= tests %>']
       },
       spec: {
-        options: {
-          reporter: 'spec',
-          clearRequireCache: false
-        },
         src: ['<%= specs %>']
       }
     },
