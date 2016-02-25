@@ -251,7 +251,7 @@ describe('/suppliers', function () {
       describe('delivery lead time', () => {
         it('requires a number', () => {
           const payload = _.omit(createSupplierPayload, 'delivery_lead_time');
-          payload.delivery_charge = 'one day';
+          payload.delivery_lead_time = 'one day';
 
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
@@ -262,7 +262,7 @@ describe('/suppliers', function () {
 
         it('requires an integer', () => {
           const payload = _.omit(createSupplierPayload, 'delivery_lead_time');
-          payload.delivery_charge = 2.5;
+          payload.delivery_lead_time = 2.5;
 
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
@@ -273,7 +273,7 @@ describe('/suppliers', function () {
 
         it('requires a value of at least 1', () => {
           const payload = _.omit(createSupplierPayload, 'delivery_lead_time');
-          payload.delivery_charge = 0;
+          payload.delivery_lead_time = 0;
 
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
