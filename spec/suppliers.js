@@ -35,7 +35,8 @@ describe('/suppliers', function () {
         has_memberships: true,
         purchase_restrictions: 'none',
         delivery_charge: 0,
-        delivery_lead_time: 1
+        delivery_lead_time: 1,
+        delivery_days: [1, 2, 3, 4, 5, 6]
       };
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
@@ -279,6 +280,27 @@ describe('/suppliers', function () {
             .then(response => {
               expect(response.statusCode).to.equal(400);
               expect(response.result.message).to.equal('child "delivery_lead_time" fails because ["delivery_lead_time" must be larger than or equal to 1]');
+            });
+        });
+      });
+
+      describe('delivery days', () => {
+        it('requires an array', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = {
+            0: false,
+            1: true,
+            2: true,
+            3: true,
+            4: true,
+            5: true,
+            6: true
+          };
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be an array]');
             });
         });
       });
