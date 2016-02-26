@@ -311,18 +311,7 @@ describe('/suppliers', function () {
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
               expect(response.statusCode).to.equal(400);
-              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be larger than or equal to 1]');
-            });
-        });
-
-        it('contains no more than seven days', () => {
-          const payload = _.omit(createSupplierPayload, 'delivery_days');
-          payload.delivery_days = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-
-          return specRequest({url: '/suppliers', method: 'POST', payload})
-            .then(response => {
-              expect(response.statusCode).to.equal(400);
-              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be smaller than or equal to 7]');
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must contain at least 1 items]');
             });
         });
 
@@ -333,7 +322,40 @@ describe('/suppliers', function () {
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
               expect(response.statusCode).to.equal(400);
-              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be unique]');
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 2 contains a duplicate value]');
+            });
+        });
+
+        it('contains values of zero or more', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = [-1, 0, 1];
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 0 fails because ["-1" must be greater than or equal to 0]]');
+            });
+        });
+
+        it('contains values of six or less', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = [5, 6, 7];
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 2 fails because ["7" must be less than or equal to 6]]');
+            });
+        });
+
+        it('contains values of six or less', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = ['Monday'];
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 0 fails because ["Monday" must be an integer]]');
             });
         });
       });
