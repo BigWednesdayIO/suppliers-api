@@ -303,6 +303,39 @@ describe('/suppliers', function () {
               expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be an array]');
             });
         });
+
+        it('contains at least one day', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = [];
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be larger than or equal to 1]');
+            });
+        });
+
+        it('contains no more than seven days', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be smaller than or equal to 7]');
+            });
+        });
+
+        it('contains no duplicates', () => {
+          const payload = _.omit(createSupplierPayload, 'delivery_days');
+          payload.delivery_days = [0, 1, 1];
+
+          return specRequest({url: '/suppliers', method: 'POST', payload})
+            .then(response => {
+              expect(response.statusCode).to.equal(400);
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" must be unique]');
+            });
+        });
       });
 
       it('does not allow _metadata', () => {
