@@ -333,7 +333,7 @@ describe('/suppliers', function () {
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
               expect(response.statusCode).to.equal(400);
-              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 0 fails because ["-1" must be greater than or equal to 0]]');
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" at position 0 fails because ["0" must be greater than or equal to 0]]');
             });
         });
 
@@ -344,7 +344,7 @@ describe('/suppliers', function () {
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
               expect(response.statusCode).to.equal(400);
-              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 2 fails because ["7" must be less than or equal to 6]]');
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" at position 2 fails because ["2" must be less than or equal to 6]]');
             });
         });
 
@@ -355,7 +355,7 @@ describe('/suppliers', function () {
           return specRequest({url: '/suppliers', method: 'POST', payload})
             .then(response => {
               expect(response.statusCode).to.equal(400);
-              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 0 fails because ["Monday" must be an integer]]');
+              expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" position 0 fails because ["0" must be number]]');
             });
         });
       });
