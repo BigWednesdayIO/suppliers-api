@@ -57,7 +57,10 @@ const baseSupplierSchema = Joi.object({
   has_memberships: Joi.boolean().description('Supplier has enabled memberships'),
   purchase_restrictions: Joi.string().description('Whether anybody, or only members can buy fromt the supplier'),
   delivery_charge: Joi.number().min(0).description('How much supplier charges for a delivery'),
-  delivery_lead_time: Joi.number().integer().min(1).description('Number of days delivery takes (1 being delivered tomorrow)')
+  delivery_lead_time: Joi.number().integer().min(1).description('Number of days delivery takes (1 being delivered tomorrow)'),
+  delivery_days: Joi.array().min(1).max(7).unique().items(
+    Joi.number().integer().min(0).max(6).description('Days of the week the supplier delivers, 0 index, Sun-Sat')
+  ).meta({className: 'DeliveryDays'})
 });
 
 const suppliersSchema = baseSupplierSchema.concat(Joi.object({
