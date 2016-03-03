@@ -36,7 +36,8 @@ describe('/suppliers', function () {
         purchase_restrictions: 'none',
         delivery_charge: 0,
         delivery_lead_time: 1,
-        delivery_days: [1, 2, 3, 4, 5, 6]
+        delivery_days: [1, 2, 3, 4, 5, 6],
+        orders_email: `${cuid()}-orders@bigwednesday.io`
       };
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})
@@ -358,6 +359,17 @@ describe('/suppliers', function () {
               expect(response.result.message).to.equal('child "delivery_days" fails because ["delivery_days" at position 0 fails because ["0" must be a number]]');
             });
         });
+      });
+
+      it('requires orders_email to be valid', () => {
+        const payload = _.omit(createSupplierPayload, 'orders_email');
+        payload.orders_email = 'bigwednesday.io';
+
+        return specRequest({url: '/suppliers', method: 'POST', payload})
+          .then(response => {
+            expect(response.statusCode).to.equal(400);
+            expect(response.result.message).to.equal('child "orders_email" fails because ["orders_email" must be a valid email]');
+          });
       });
 
       it('does not allow _metadata', () => {
