@@ -37,7 +37,8 @@ describe('/suppliers', function () {
         delivery_charge: 0,
         delivery_lead_time: 1,
         delivery_days: [1, 2, 3, 4, 5, 6],
-        orders_email: `${cuid()}-orders@bigwednesday.io`
+        orders_email: `${cuid()}-orders@bigwednesday.io`,
+        orders_textsms: '01234567890'
       };
 
       return specRequest({url: '/suppliers', method: 'POST', payload: createSupplierPayload})

@@ -61,7 +61,8 @@ const baseSupplierSchema = Joi.object({
   delivery_days: Joi.array().min(1).max(7).unique().items(
     Joi.number().integer().min(0).max(6).description('Days of the week the supplier delivers, 0 index, Sun-Sat')
   ).meta({className: 'DeliveryDays'}),
-  orders_email: Joi.string().email().description('Alternate email that orders are sent to')
+  orders_email: Joi.string().email().description('Alternate email that orders are sent to'),
+  orders_textsms: Joi.string().description('Optional phone number for sms order notifications')
 });
 
 const suppliersSchema = baseSupplierSchema.concat(Joi.object({
